@@ -1,0 +1,5 @@
+data,window,abs,data_len_before,data_len_after,correlation
+mo,3,0.25,7913,5583,0.9848
+so,3,0.3,10568,10328,0.9984
+si,3,0.025,5159,3620,0.9550
+mo,3,0.5,10252,9607,0.9878

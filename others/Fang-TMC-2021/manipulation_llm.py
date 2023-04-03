@@ -48,7 +48,7 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../csi_mobile_indoor_r.mat")
+rawData = loadmat("../../testdata_3_8.mat")
 # data BMR KMR BGR BGR-with-no-error
 # 0.9660590278 0.0 1.1236831837690207 1.085544284042138
 

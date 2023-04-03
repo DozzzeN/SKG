@@ -37,10 +37,11 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_mobile_outdoor_1.mat")
+rawData = loadmat("../../data/data_static_indoor_1.mat")
 # data BMR KMR BGR BGR-with-no-error
 # mi1 0.9947395833  0.58            0.9890279709473033  0.9838252717251327
 # si1 0.9994811622  0.9233716475    0.9972537313432835  0.9967363184079602
+# si1 0.9976851852  0.6666666667    0.10316417910447762 0.10292537313432835
 # mo1 0.9825367647  0.1764705882    0.9678280207561156  0.9509266123054114
 # so1 0.9920079023  0.3275862069    0.9928230731511613  0.9848883341505817
 
@@ -76,7 +77,9 @@ noiseWholeSum1 = 0
 
 times = 0
 
-for staInd in range(0, dataLen, keyLen):
+# for staInd in range(0, dataLen, keyLen):
+# static
+for staInd in range(0, int(dataLen / 10), keyLen):
     endInd = staInd + keyLen
     print("range:", staInd, endInd)
     if endInd >= len(CSIa1Orig):
