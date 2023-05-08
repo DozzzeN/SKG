@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from scipy.fft import dct
 from scipy.io import loadmat, savemat
 from scipy.stats import pearsonr, boxcox
+from pyentrp import entropy as ent
 
 from zca import ZCA
 
@@ -105,14 +106,31 @@ def normal2uniform(data):
 
 
 rawData = loadmat("../data/data_static_indoor_1.mat")
+# rawData = loadmat("../skyglow/Scenario2-Office-LoS/data3_upto5.mat")
 corrMatName = "corr_si.mat"
 rssMatName = "corr_si_rss.mat"
+
+# stalking attack
+# CSIe2Orig = loadmat("../skyglow/Scenario3-Mobile2/data_eave_mobile_2.mat")['A'][:, 0]
+CSIe2Orig = loadmat("../skyglow/Scenario2-Office-LoS-eve_NLoS/data_eave_LOS_EVE_NLOS.mat")['A'][:, 0]
+
+# 7 256
 # data BMR BGR BGR-with-no-error
 # si1 - for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
 # mi1 1.0 1.0 2.0 2.0
 # si1 1.0 1.0 2.0 2.0
 # mo1 1.0 1.0 2.0 2.0
+# 因为so的数据长度没有补齐
 # so1 1.0 1.0 1.8461538461538463 1.8461538461538463
+
+# 5 1024
+# # data BMR BGR BGR-with-no-error
+# # si1 - for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
+# # mi1 1.0 1.0 2.9 2.9
+# # si1 1.0 1.0 2.8216216216216217 2.8216216216216217
+# # mo1 1.0 1.0 2.9 2.9
+# # 因为so的数据长度没有补齐
+# # so1 1.0 1.0 2.32 2.32
 
 # CSIa1Orig = rawData['A'][:, 0][0: 20000]
 # CSIb1Orig = rawData['A'][:, 1][0: 20000]
@@ -174,13 +192,13 @@ overhead = 0
 addNoise = "mul"
 codings = ""
 
-roBits = 256
-episodeLen = 7
+roBits = 1024
+episodeLen = 5
 
 epiLen = roBits
 segLen = 1
-
-while epiLen > 2:
+# while epiLen > 2:
+while segLen < episodeLen * 2:
     if segLen == 1:
         segLen = episodeLen
         epiLen = roBits
@@ -205,9 +223,8 @@ while epiLen > 2:
     stalkCurrRSS = []
 
     # static indoor
-    # for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
-    # for staInd in range(0, int(dataLen / 5), int(keyLen / 5)):
-    for staInd in range(0, dataLen, int(keyLen / 10)):
+    for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
+    # for staInd in range(0, dataLen, keyLen):
         cnt = 0
         maxSum2 = -1
         while True:
@@ -215,7 +232,7 @@ while epiLen > 2:
             cnt += 1
             endInd = staInd + keyLen
             print("range:", staInd, endInd)
-            if endInd >= len(CSIa1Orig):
+            if endInd >= len(CSIa1Orig) or endInd >= len(CSIe2Orig):
                 break
 
             # 只计算最底层RO的长度作为样本值个数
@@ -228,8 +245,6 @@ while epiLen > 2:
 
             # imitation attack
             CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=len(CSIa1Orig))
-            # stalking attack
-            CSIe2Orig = loadmat("../skyglow/Scenario2-Office-LoS-eve_NLoS/data_eave_LOS_EVE_NLOS.mat")['A'][:, 0]
 
             # noiseOrig = np.random.normal(np.mean(CSIa1Orig), np.std(CSIa1Orig), size=len(CSIa1Orig))
             # noiseOrig = np.random.normal(0, np.std(CSIa1Orig), size=len(CSIa1Orig))
@@ -293,7 +308,6 @@ while epiLen > 2:
             # tmpCSIa1 = np.array(integral_sq_derivative_increment(tmpCSIa1, tmpNoise)) * tmpCSIa1
             # tmpCSIb1 = np.array(integral_sq_derivative_increment(tmpCSIb1, tmpNoise)) * tmpCSIb1
             # tmpCSIe1 = np.array(integral_sq_derivative_increment(tmpCSIe1, tmpNoise)) * tmpCSIe1
-            # print("correlation a-b", pearsonr(tmpCSIa1, tmpCSIb1)[0])
             # print("correlation a-e1", pearsonr(tmpCSIa1, tmpCSIe1)[0])
             # print("correlation a-e2", pearsonr(tmpCSIa1, tmpCSIe2)[0])
             # print("correlation a-n", pearsonr(tmpCSIa1, tmpNoise)[0])
@@ -411,10 +425,10 @@ while epiLen > 2:
             for i in range(len(a_list) - len(n2_list)):
                 n2_list += str(np.random.randint(0, 2))
 
-            print("keys of a:", len(a_list), a_list)
-            print("keys of a:", len(a_list_number), a_list_number)
-            print("keys of b:", len(b_list), b_list)
-            print("keys of b:", len(b_list_number), b_list_number)
+            # print("keys of a:", len(a_list), a_list)
+            # print("keys of a:", len(a_list_number), a_list_number)
+            # print("keys of b:", len(b_list), b_list)
+            # print("keys of b:", len(b_list_number), b_list_number)
             # print("keys of e:", len(e_list), e_list)
             # print("keys of e:", len(e_list_number), e_list_number)
             # print("keys of n:", len(n_list), n_list)
@@ -476,8 +490,8 @@ while epiLen > 2:
                     for i in range(len(a_list_number)):
                         if a_list_number[i] != b_list_number[i]:
                             trueError.append(i)
-                    print("true error", trueError)
-                    print("a-b", sum2, sum2 / sum1)
+                    # print("true error", trueError)
+                    # print("a-b", sum2, sum2 / sum1)
                     reconciliation = b_list_number.copy()
                     reconciliation.sort()
 
@@ -520,7 +534,7 @@ while epiLen > 2:
                                 errorInd.append(repeatNumber[i][j + 1])
                             else:
                                 errorInd.append(repeatNumber[i][j])
-                    print(errorInd)
+                    # print(errorInd)
                     b_list_number1 = b_list_number.copy()
                     for i in errorInd:
                         epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
@@ -542,7 +556,7 @@ while epiLen > 2:
                         number = bin(b_list_number1[i])[2:].zfill(int(np.log2(len(b_list_number1))))
                         b_list += number
 
-                    print("keys of b:", len(b_list_number1), b_list_number1)
+                    # print("keys of b:", len(b_list_number1), b_list_number1)
 
                     sum2 = 0
                     for i in range(0, min(len(a_list), len(b_list))):
@@ -556,7 +570,7 @@ while epiLen > 2:
                         for r in range(len(repeatNumber)):
                             tmp = list(set(repeatNumber[r]) - set(errorInd))
                             errorInd = tmp
-                            print(errorInd)
+                            # print(errorInd)
                             b_list_number2 = b_list_number.copy()
                             for i in errorInd:
                                 epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
@@ -589,7 +603,7 @@ while epiLen > 2:
                     # 正式纠错 end
 
             maxSum2 = max(sum2, maxSum2)
-            print("sum2", maxSum2, sum1)
+            # print("sum2", maxSum2, sum1)
 
             trueCurrKey.append(a_list_number)
             legiCurrKey.append(b_list_number)
@@ -688,6 +702,7 @@ inferSample = []
 imitSample = []
 stalkSample = []
 
+# 组装成完整的密钥
 for i in range(len(trueKey[0])):
     trueTmp = []
     legiTmp = []
@@ -752,21 +767,157 @@ print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum,
       originSum / times / roBits / episodeLen,
       correctSum / times / roBits / episodeLen)
 
+# 每次生成的RO之间的相关系数
 for i in range(len(trueRO)):
-    legiCorr.append(pearsonr(trueRO[i], legiRO[i])[0])
-    randomCorr.append(pearsonr(trueRO[i], randomRO[i])[0])
-    inferCorr.append(pearsonr(trueRO[i], inferRO[i])[0])
-    imitCorr.append(pearsonr(trueRO[i], imitRO[i])[0])
-    stalkCorr.append(pearsonr(trueRO[i], stalkRO[i])[0])
+    legiCorr.append(abs(pearsonr(trueRO[i], legiRO[i])[0]))
+    randomCorr.append(abs(pearsonr(trueRO[i], randomRO[i])[0]))
+    inferCorr.append(abs(pearsonr(trueRO[i], inferRO[i])[0]))
+    imitCorr.append(abs(pearsonr(trueRO[i], imitRO[i])[0]))
+    stalkCorr.append(abs(pearsonr(trueRO[i], stalkRO[i])[0]))
 
 for i in range(len(trueRO)):
-    legiCorrRSS.append(pearsonr(trueSample[i], legiSample[i])[0])
-    inferCorrRSS.append(pearsonr(trueSample[i], inferSample[i])[0])
-    imitCorrRSS.append(pearsonr(trueSample[i], imitSample[i])[0])
-    stalkCorrRSS.append(pearsonr(trueSample[i], stalkSample[i])[0])
+    legiCorrRSS.append(abs(pearsonr(trueSample[i], legiSample[i])[0]))
+    inferCorrRSS.append(abs(pearsonr(trueSample[i], inferSample[i])[0]))
+    imitCorrRSS.append(abs(pearsonr(trueSample[i], imitSample[i])[0]))
+    stalkCorrRSS.append(abs(pearsonr(trueSample[i], stalkSample[i])[0]))
 
-savemat(corrMatName, {"legiCorr": legiCorr, "randomCorr": randomCorr, "inferCorr": inferCorr,
-                  "imitCorr": imitCorr, "stalkCorr": stalkCorr})
+# savemat(corrMatName, {"legiCorr": legiCorr, "randomCorr": randomCorr, "inferCorr": inferCorr,
+#                   "imitCorr": imitCorr, "stalkCorr": stalkCorr})
+#
+# savemat(rssMatName, {"legiCorrRSS": legiCorrRSS, "inferCorrRSS": inferCorrRSS,
+#                   "imitCorrRSS": imitCorrRSS, "stalkCorrRSS": stalkCorrRSS})
 
-savemat(rssMatName, {"legiCorrRSS": legiCorrRSS, "inferCorrRSS": inferCorrRSS,
-                  "imitCorrRSS": imitCorrRSS, "stalkCorrRSS": stalkCorrRSS})
+print("correlation between the inferred and actual RO")
+print(np.mean(legiCorr), np.min(legiCorr), np.max(legiCorr))
+print(np.mean(randomCorr), np.min(randomCorr), np.max(randomCorr))
+print(np.mean(inferCorr), np.min(inferCorr), np.max(inferCorr))
+print(np.mean(imitCorr), np.min(imitCorr), np.max(imitCorr))
+print(np.mean(stalkCorr), np.min(stalkCorr), np.max(stalkCorr))
+
+legiAdjCorr = []
+randomAdjCorr = []
+inferAdjCorr = []
+imitAdjCorr = []
+stalkAdjCorr = []
+
+# 相邻两次生成的RO之间的相关系数
+for i in range(len(trueRO) - 1):
+    legiAdjCorr.append(abs(pearsonr(legiRO[i], legiRO[i + 1])[0]))
+    randomAdjCorr.append(abs(pearsonr(randomRO[i], randomRO[i + 1])[0]))
+    inferAdjCorr.append(abs(pearsonr(inferRO[i], inferRO[i + 1])[0]))
+    imitAdjCorr.append(abs(pearsonr(imitRO[i], imitRO[i + 1])[0]))
+    stalkAdjCorr.append(abs(pearsonr(stalkRO[i], stalkRO[i + 1])[0]))
+
+print("correlation between adjacent ROs")
+print(np.mean(legiAdjCorr), np.min(legiAdjCorr), np.max(legiAdjCorr))
+print(np.mean(randomAdjCorr), np.min(randomAdjCorr), np.max(randomAdjCorr))
+print(np.mean(inferAdjCorr), np.min(inferAdjCorr), np.max(inferAdjCorr))
+print(np.mean(imitAdjCorr), np.min(imitAdjCorr), np.max(imitAdjCorr))
+print(np.mean(stalkAdjCorr), np.min(stalkAdjCorr), np.max(stalkAdjCorr))
+
+# 某次生成的RO与所有其他RO之间的相关系数
+# for i in range(len(trueRO)):
+#     for j in range(len(trueRO)):
+#         if i == j:
+#             continue
+#         legiAdjCorr.append(pearsonr(legiRO[i], legiRO[j])[0])
+#         randomAdjCorr.append(pearsonr(randomRO[i], randomRO[j])[0])
+#         inferAdjCorr.append(pearsonr(inferRO[i], inferRO[j])[0])
+#         imitAdjCorr.append(pearsonr(imitRO[i], imitRO[j])[0])
+#         stalkAdjCorr.append(pearsonr(stalkRO[i], stalkRO[j])[0])
+
+legiAdjCorr = []
+randomAdjCorr = []
+inferAdjCorr = []
+imitAdjCorr = []
+stalkAdjCorr = []
+
+csv = open("adjCorr.csv", "a+")
+# 相邻RO之间的相关系数
+for i in range(len(trueKey)):
+    legiAdjCorr = []
+    randomAdjCorr = []
+    inferAdjCorr = []
+    imitAdjCorr = []
+    stalkAdjCorr = []
+    for j in range(len(trueKey[i]) - 1):
+        legiAdjCorr.append(abs(pearsonr(trueKey[i][j], trueKey[i][j + 1])[0]))
+        legiAdjCorr[len(legiAdjCorr) - 1] = 0 if math.isnan(legiAdjCorr[len(legiAdjCorr) - 1]) \
+                                                 is True else legiAdjCorr[len(legiAdjCorr) - 1]
+        randomAdjCorr.append(abs(pearsonr(randomKey[i][j], randomKey[i][j + 1])[0]))
+        randomAdjCorr[len(randomAdjCorr) - 1] = 0 if math.isnan(randomAdjCorr[len(randomAdjCorr) - 1]) \
+                                                     is True else randomAdjCorr[len(randomAdjCorr) - 1]
+        inferAdjCorr.append(abs(pearsonr(inferKey[i][j], inferKey[i][j + 1])[0]))
+        inferAdjCorr[len(inferAdjCorr) - 1] = 0 if math.isnan(inferAdjCorr[len(inferAdjCorr) - 1]) \
+                                                   is True else inferAdjCorr[len(inferAdjCorr) - 1]
+        imitAdjCorr.append(abs(pearsonr(imitKey[i][j], imitKey[i][j + 1])[0]))
+        imitAdjCorr[len(imitAdjCorr) - 1] = 0 if math.isnan(imitAdjCorr[len(imitAdjCorr) - 1]) \
+                                                 is True else imitAdjCorr[len(imitAdjCorr) - 1]
+        stalkAdjCorr.append(abs(pearsonr(stalkKey[i][j], stalkKey[i][j + 1])[0]))
+        stalkAdjCorr[len(stalkAdjCorr) - 1] = 0 if math.isnan(stalkAdjCorr[len(stalkAdjCorr) - 1]) \
+                                                   is True else stalkAdjCorr[len(stalkAdjCorr) - 1]
+
+    print("correlation between layers of RO in ROs with length=", len(trueKey[i][0]))
+    print(np.mean(legiAdjCorr), np.min(legiAdjCorr), np.max(legiAdjCorr))
+    print(np.mean(randomAdjCorr), np.min(randomAdjCorr), np.max(randomAdjCorr))
+    print(np.mean(inferAdjCorr), np.min(inferAdjCorr), np.max(inferAdjCorr))
+    print(np.mean(imitAdjCorr), np.min(imitAdjCorr), np.max(imitAdjCorr))
+    print(np.mean(stalkAdjCorr), np.min(stalkAdjCorr), np.max(stalkAdjCorr))
+    csv.write(str(len(trueKey[i][0])) + '\n')
+    csv.write(str(np.mean(legiAdjCorr)) + ',' + str(np.min(legiAdjCorr)) + ',' + str(np.max(legiAdjCorr)) + '\n' +
+              str(np.mean(randomAdjCorr)) + ',' + str(np.min(randomAdjCorr)) + ',' + str(np.max(randomAdjCorr)) + '\n' +
+              str(np.mean(inferAdjCorr)) + ',' + str(np.min(inferAdjCorr)) + ',' + str(np.max(inferAdjCorr)) + '\n' +
+              str(np.mean(imitAdjCorr)) + ',' + str(np.min(imitAdjCorr)) + ',' + str(np.max(imitAdjCorr)) + '\n' +
+              str(np.mean(stalkAdjCorr)) + ',' + str(np.min(stalkAdjCorr)) + ',' + str(np.max(stalkAdjCorr)) + '\n')
+    csv.write('\n')
+csv.close()
+
+# 相邻两次生成的RO之间的排列熵
+for o in range(3, 8):
+    legiAdjCorr = []
+    randomAdjCorr = []
+    inferAdjCorr = []
+    imitAdjCorr = []
+    stalkAdjCorr = []
+    for i in range(len(trueRO)):
+        legiAdjCorr.append(ent.permutation_entropy(legiRO[i], order=o))
+        randomAdjCorr.append(ent.permutation_entropy(randomRO[i], order=o))
+        inferAdjCorr.append(ent.permutation_entropy(inferRO[i], order=o))
+        imitAdjCorr.append(ent.permutation_entropy(imitRO[i], order=o))
+        stalkAdjCorr.append(ent.permutation_entropy(stalkRO[i], order=o))
+
+    # print("permutation entropy of all ROs with order = " + str(o))
+    # print(np.mean(legiAdjCorr), np.min(legiAdjCorr), np.max(legiAdjCorr))
+    # print(np.mean(randomAdjCorr), np.min(randomAdjCorr), np.max(randomAdjCorr))
+    # print(np.mean(inferAdjCorr), np.min(inferAdjCorr), np.max(inferAdjCorr))
+    # print(np.mean(imitAdjCorr), np.min(imitAdjCorr), np.max(imitAdjCorr))
+    # print(np.mean(stalkAdjCorr), np.min(stalkAdjCorr), np.max(stalkAdjCorr))
+
+# 相邻两次生成的RO之间的排列熵
+for i in range(len(trueKey)):
+    for o in range(3, 8):
+        legiAdjCorr = []
+        randomAdjCorr = []
+        inferAdjCorr = []
+        imitAdjCorr = []
+        stalkAdjCorr = []
+        if o >= len(trueKey[i][0]):
+            continue
+        d = 1 if int(len(trueKey[i][0]) / (o - 1)) == 0 else int(len(trueKey[i][0]) / (o - 1))
+        d = int(o / 2) if int(len(trueKey[i][0]) / (o - 1)) >= o else int(len(trueKey[i][0]) / (o - 1))
+        for j in range(len(trueKey[i])):
+            # permutation_entropy在运算中对order和delay有制约关系：N-(order-1)*delay>=0
+            legiAdjCorr.append(ent.permutation_entropy(legiKey[i][j], order=o, delay=d))
+            randomAdjCorr.append(ent.permutation_entropy(randomKey[i][j], order=o, delay=d))
+            inferAdjCorr.append(ent.permutation_entropy(inferKey[i][j], order=o, delay=d))
+            imitAdjCorr.append(ent.permutation_entropy(imitKey[i][j], order=o, delay=d))
+            stalkAdjCorr.append(ent.permutation_entropy(stalkKey[i][j], order=o, delay=d))
+
+        # print("permutation entropy of each layer of RO in ROs with order = "
+        #       + str(o) + ", delay = " + str(d) + ", key length = " + str(
+        #           len(trueKey[i][0])))
+        # print(np.mean(legiAdjCorr), np.min(legiAdjCorr), np.max(legiAdjCorr))
+        # print(np.mean(randomAdjCorr), np.min(randomAdjCorr), np.max(randomAdjCorr))
+        # print(np.mean(inferAdjCorr), np.min(inferAdjCorr), np.max(inferAdjCorr))
+        # print(np.mean(imitAdjCorr), np.min(imitAdjCorr), np.max(imitAdjCorr))
+        # print(np.mean(stalkAdjCorr), np.min(stalkAdjCorr), np.max(stalkAdjCorr))

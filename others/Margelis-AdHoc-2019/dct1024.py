@@ -37,19 +37,24 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("csi_mobile_indoor_1_r.mat")
+rawData = loadmat("../../data/data_mobile_indoor_1.mat")
+# data BMR KMR BGR BGR-with-no-error
+# mi1 0.9794270833  0.0             0.7912223767578427  0.7749446247360017
+# si1 0.9924958882  0.1578947368    0.9679601990049751  0.9606965174129353
+# mo1 0.921484375   0.0             0.7590808005930318  0.6994810971089696
+# so1 0.9625488281  0.0             0.912940756920608   0.8787500557214818
 
-CSIa1Orig = rawData['testdata'][:, 0]
-CSIb1Orig = rawData['testdata'][:, 1]
+CSIa1Orig = rawData['A'][:, 0]
+CSIb1Orig = rawData['A'][:, 1]
 # stalking attack
-CSIe2Orig = loadmat("csi_static_indoor_1.mat")['testdata'][:, 0]
+CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
 # CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
 # CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
 
-segLen = 6
-keyLen = 64 * segLen
+segLen = 5
+keyLen = 1024 * segLen
 
 originSum = 0
 correctSum = 0
@@ -71,9 +76,7 @@ noiseWholeSum1 = 0
 
 times = 0
 
-# for staInd in range(0, dataLen, keyLen):
-# static
-for staInd in range(0, int(dataLen / 10), keyLen):
+for staInd in range(0, dataLen, keyLen):
     endInd = staInd + keyLen
     print("range:", staInd, endInd)
     if endInd >= len(CSIa1Orig):
@@ -308,5 +311,9 @@ print("a-n1 key agreement rate", noiseWholeSum1, "/", originWholeSum, "=", round
 print("times", times)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
+
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10),
+      originSum / times / keyLen,
+      correctSum / times / keyLen)
 
 print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig), correctSum / len(CSIa1Orig))

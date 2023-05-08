@@ -70,7 +70,7 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig)
 
 
-fileName = "../data/data_mobile_outdoor_1.mat"
+fileName = "../data/data_mobile_indoor_1.mat"
 rawData = loadmat(fileName)
 # csv = open("../edit_distance/evaluations/bipartite.csv", "a+")
 
@@ -89,7 +89,7 @@ noiseOrig = np.random.uniform(5, 6, size=dataLen)  ## Multiplication item normal
 noiseOrigBack = noiseOrig.copy()
 
 intvl = 7
-keyLen = 128
+keyLen = 256
 times = 0
 
 originSum = 0
@@ -213,10 +213,10 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
             tmp += int(b_list[j * keyLen + i])
         b_bits += str(tmp % 2)
 
-    print("keys of a:", len(a_list), a_list)
-    print("keys of a:", len(a_bits), a_bits)
-    print("keys of b:", len(b_list), b_list)
-    print("keys of b:", len(b_bits), b_bits)
+    # print("keys of a:", len(a_list), a_list)
+    # print("keys of a:", len(a_bits), a_bits)
+    # print("keys of b:", len(b_list), b_list)
+    # print("keys of b:", len(b_bits), b_bits)
 
     sum1 = min(len(a_bits), len(b_bits))
     sum2 = 0

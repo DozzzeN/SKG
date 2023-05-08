@@ -5,6 +5,7 @@ from numpy.random import exponential as Exp
 from pyentrp import entropy as ent
 from scipy.io import loadmat
 from scipy.spatial.distance import pdist
+from scipy.stats import pearsonr
 
 from mwmatching import maxWeightMatching
 
@@ -70,16 +71,14 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig)
 
 
-fileNameA = "../data/CSIa_r.mat"
-fileNameB = "../data/CSIb_r.mat"
-rawDataA = loadmat(fileNameA)
-rawDataB = loadmat(fileNameB)
+rawData = loadmat("../csi/csi_static_outdoor_r.mat")
 csi_csv = open("../edit_distance/evaluations/CSI.csv", "a+")
 
-CSIa1OrigRaw1 = rawDataA['CSIa'][0]
-CSIb1OrigRaw1 = rawDataB['CSIb'][0]
+CSIa1OrigRaw1 = rawData['testdata'][:, 0]
+CSIb1OrigRaw1 = rawData['testdata'][:, 1]
 
-CSIi1OrigRaw1 = loadmat('../data/CSIa_r.mat')['CSIa'][0]
+# CSIi1OrigRaw1 = loadmat('../csi/csi_static_indoor_1_r.mat')['testdata'][:, 0]
+CSIi1OrigRaw1 = rawData['testdata'][:, 0]
 minLen1 = min(len(CSIa1OrigRaw1), len(CSIi1OrigRaw1))
 CSIa1Orig = CSIa1OrigRaw1[:minLen1]
 CSIb1Orig = CSIb1OrigRaw1[:minLen1]
@@ -88,7 +87,6 @@ CSIi1Orig = CSIi1OrigRaw1[:minLen1]
 dataLen = len(CSIa1Orig)
 CSIb1Orig = CSIb1Orig - (np.mean(CSIb1Orig) - np.mean(CSIa1Orig))
 
-entropyTime = time.time()
 entropyThres = 2
 CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 32, dataLen, entropyThres)
 # CSIa1Orig, CSIb1Orig = entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres)
@@ -98,7 +96,7 @@ CSIb1OrigBack = CSIb1Orig.copy()
 noiseOrig = np.random.uniform(5, 6, size=dataLen)  ## Multiplication item normal distribution
 noiseOrigBack = noiseOrig.copy()
 
-intvl = 9
+intvl = 7
 keyLen = 64
 times = 0
 
@@ -106,8 +104,13 @@ originSum = 0
 correctSum = 0
 originWholeSum = 0
 correctWholeSum = 0
-topNum = 16
+topNum = keyLen
+overhead = 0
 
+print("sample number", len(CSIa1OrigRaw1), minLen1)
+
+# "intvl * 10" for static outdoor
+# for staInd in range(0, len(CSIa1Orig), intvl * 10):
 for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     processTime = time.time()
 
@@ -140,6 +143,7 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     edgesn = []
     matchSort = []
 
+    start = time.time()
     for ii in range(permLen):
         coefLs = []
         aIndVec = np.array([aa for aa in range(permOrigInd[ii], permOrigInd[ii] + intvl, 1)])  ## for permuted CSIa1
@@ -177,6 +181,8 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
 
     matchb = [j - permLen for (i, j, wt) in neg_edges if match[i] == j]
     print("--- matchTime %s seconds ---" % (time.time() - matchTime))
+
+    overhead += time.time() - start
 
     a_list = ""
     b_list = ""
@@ -239,6 +245,10 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
 
 print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)
 print("a-b whole match", correctWholeSum, "/", originWholeSum, "=", correctWholeSum / originWholeSum)
+# print(times)
+# print(overhead / times)
+# print(originSum / len(CSIa1Orig) * intvl)
+# print(correctSum / len(CSIa1Orig) * intvl)
 # csi_csv.write(
 #     fileNameA + ',' + str(times) + ',' + str(intvl) + ',' + str(topNum) + ',' + str(correctSum / originSum) + ','
 #     + str(correctWholeSum / originWholeSum) + '\n')

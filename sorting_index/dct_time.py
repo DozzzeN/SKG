@@ -45,8 +45,12 @@ CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 dataLen = len(CSIa1Orig)
 
-segLen = 7
-keyLen = 16 * segLen
+# keyBit 160 384 896 2048 4608 10240
+# keyLen 32 64 128 256 512 1024
+# segLen 5 6 7 8 9 10
+
+segLen = 1
+keyLen = 11 * 2048 * segLen
 times = 0
 overhead = 0
 
@@ -63,13 +67,14 @@ for staInd in range(0, dataLen, keyLen):
 
     CSIa1Orig[origInd] = CSIa1Epi
 
-    tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
+    CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
 
-    tmpCSIa1 = smooth(np.array(tmpCSIa1), window_len=3, window='flat')
+    tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
 
     start = time.time()
 
-    dctCSIa1 = dct(tmpCSIa1)
+    dctCSIa1 = dct(tmpCSIa1, n=int(len(tmpCSIa1) / 2))
+    # dctCSIa1 = dct(tmpCSIa1)
 
     mean_a = np.mean(dctCSIa1)
     std_a = np.std(dctCSIa1)
@@ -86,6 +91,8 @@ for staInd in range(0, dataLen, keyLen):
         elif dctCSIa1[i] <= mean_a - std_a:
             a_list.append("00")
 
+    a_bits = "".join(a_list)
+    print("bit length", len(a_bits))
     end = time.time()
     overhead += end - start
     print("time:", end - start)

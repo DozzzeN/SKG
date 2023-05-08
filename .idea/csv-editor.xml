@@ -87,6 +87,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\sorting_index\perturb.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\sorting_index\uniform.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\tree_sort\level_corr.csv">
           <value>
             <Attribute>

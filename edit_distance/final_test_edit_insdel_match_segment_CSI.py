@@ -115,14 +115,11 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, CSIe1Orig, segLen, dataLen, entropyTh
 
 
 isShow = False
-fileNameA = "../data/CSIa_r.mat"
-fileNameB = "../data/CSIb_r.mat"
-rawDataA = loadmat(fileNameA)
-rawDataB = loadmat(fileNameB)
+rawData = loadmat("../csi/csi_static_outdoor_r.mat")
 csi_csv = open("evaluations/CSI.csv", "a+")
 
-CSIa1OrigRaw1 = rawDataA['CSIa'][0]
-CSIb1OrigRaw1 = rawDataB['CSIb'][0]
+CSIa1OrigRaw1 = rawData['testdata'][:, 0]
+CSIb1OrigRaw1 = rawData['testdata'][:, 1]
 
 # csv1 = open("../correlation/csi1.csv", "r")
 # reader1 = csv.reader(csv1)
@@ -136,7 +133,8 @@ CSIb1OrigRaw1 = rawDataB['CSIb'][0]
 # for item in reader2:
 #     CSIb1OrigRaw2.append(float(item[0]))
 
-CSIi1OrigRaw1 = loadmat('../data/CSIa_r.mat')['CSIa'][0]
+CSIi1OrigRaw1 = loadmat('../data/data_static_indoor_1.mat')['A'][:, 0]
+# CSIi1OrigRaw1 = rawData['testdata'][:, 0]
 minLen1 = min(len(CSIa1OrigRaw1), len(CSIi1OrigRaw1))
 CSIa1Orig = CSIa1OrigRaw1[:minLen1]
 CSIb1Orig = CSIb1OrigRaw1[:minLen1]
@@ -161,7 +159,7 @@ CSIn1OrigBack = CSIn1Orig.copy()
 
 intvl = 5
 keyLen = 64
-segLen = 5
+segLen = 9
 addNoise = False
 metrics = [absolute, absolute2, euclidean, manhattan, chebyshev, cosine, dtw, correlation]
 metric = metrics[0]
@@ -181,9 +179,17 @@ codings = ""
 times = 0
 maxDiffAB = 0
 
+print("sample number", len(CSIa1OrigRaw1), minLen1)
+
+# 多次结果不一致
+
 # 不同的距离函数对应着不同的阈值
 # WITHOUT NOISE
-threshold = 0.2  # absolute
+threshold = 0.60  # absolute
+
+# 'keyLen' for static outdoor
+# for staInd in range(0, len(CSIa1Orig), keyLen):
+
 for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     processTime = time.time()
 

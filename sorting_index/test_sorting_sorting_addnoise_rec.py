@@ -114,13 +114,13 @@ def normal2uniform(data):
     return x_list
 
 
-fileName = ["../data/data_mobile_outdoor_2.mat",
-            "../data/data_mobile_outdoor_1.mat",
-            "../data/data_mobile_indoor_1.mat",
-            "../data/data_mobile_indoor_2.mat",
-            "../data/data_static_outdoor_1.mat",
-            "../data/data_static_indoor_1.mat"]
-# fileName = ["../data/data_static_indoor_1.mat"]
+# fileName = ["../data/data_mobile_outdoor_2.mat",
+#             "../data/data_mobile_outdoor_1.mat",
+#             "../data/data_mobile_indoor_1.mat",
+#             "../data/data_mobile_indoor_2.mat",
+#             "../data/data_static_outdoor_1.mat",
+#             "../data/data_static_indoor_1.mat"]
+fileName = ["../data/data_static_indoor_1.mat"]
 for f in fileName:
     print(f)
     rawData = loadmat(f)
@@ -137,8 +137,8 @@ for f in fileName:
     segLen = 5
     keyLen = 128 * segLen
     rec = True
-    tell = True
-    metrics = "dtw"
+    tell = False
+    metrics = "city"
 
     originSum = 0
     correctSum = 0
@@ -197,7 +197,7 @@ for f in fileName:
         dataLen = int(dataLen / 5)
         keyLen = int(keyLen / 5)
         print(dataLen, keyLen)
-    for staInd in range(0, int(dataLen), keyLen):
+    for staInd in range(0, dataLen, keyLen):
         cnt = 0
         maxSum2 = -1
         while True:

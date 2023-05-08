@@ -1,5 +1,6 @@
-segLen=7;
-keyLen=256*segLen;
+clear; close all; clc
+segLen=1;
+keyLen=2048*segLen;
 times=0;
 overhead=0;
 
@@ -10,7 +11,7 @@ dataLen=length(CSIa10rig);
 
 for staInd=1:keyLen:dataLen
     endInd=staInd+keyLen;
-    fprintf("range: %d %d",staInd,endInd);
+    % fprintf("range: %d %d",staInd,endInd);
     if endInd > length(CSIa10rig)
         break
     end
@@ -27,10 +28,11 @@ for staInd=1:keyLen:dataLen
     tmpCSIb1=CSIb10rig(staInd:endInd-1);
     [~,idx]=sort(tmpCSIa1);
     [~,tmpCSIa1Ind]=sort(idx);
-    %     tic;
+    
     t1 = clock;
     [~,idx]=sort(tmpCSIb1);
     [~,tmpCSIb1Ind]=sort(idx);
+    t2 = clock;
 
     minEpiIndClosenessLsb=zeros(keyLen/segLen);
     loop_time=keyLen/segLen;
@@ -41,13 +43,15 @@ for staInd=1:keyLen:dataLen
     b=[];
     epiInda1_v=reshape(tmpCSIa1Ind,[1,loop_time,segLen]);
     epiIndb1_h=reshape(tmpCSIb1Ind,[loop_time,1,segLen]);
+
+    t3 = clock;
     a=repmat(epiInda1_v,loop_time,1,1);
     b=repmat(epiIndb1_h,1,loop_time,1);
     res=sum(abs(a-b),3);
     res_min=min(res);
+    t4 = clock;
 
-    %     toc
-    t2 = clock;
-    overhead = overhead + etime(t2,t1);
+    % overhead = overhead + etime(t4,t1);
+    overhead = overhead + etime(t2,t1) + etime(t4,t3);
 end
-overhead = overhead / times;
+overhead = overhead / times

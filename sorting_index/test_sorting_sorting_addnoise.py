@@ -103,7 +103,7 @@ def normal2uniform(data):
     return x_list
 
 
-rawData = loadmat("../data/data_static_outdoor_1.mat")
+rawData = loadmat("../data/data_mobile_indoor_1.mat")
 # data BMR BGR BGR-with-no-error
 # si1 - for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
 # mi1 1.0   1.0     1.1428571428571428  1.1428571428571428
@@ -112,16 +112,30 @@ rawData = loadmat("../data/data_static_outdoor_1.mat")
 # 因为so的数据长度没有补齐
 # so1 1.0   1.0     1.054945054945055   1.054945054945055
 
+# 6 512
+# mi1 1.0   1.0     1.5     1.5
+# si1 1.0   1.0     1.5     1.5
+# mo1 1.0   1.0     1.5     1.5
+# 因为so的数据长度没有补齐
+# so1 1.0   1.0     1.3125  1.3125
+
+# 5 1024
+# mi1 1.0   1.0     2.0     2.0
+# si1 1.0   1.0     2.0     2.0
+# mo1 1.0   1.0     2.0     2.0
+# so1 1.0   1.0     2.0     2.0
+
 # CSIa1Orig = rawData['A'][:, 0][0: 20000]
 # CSIb1Orig = rawData['A'][:, 1][0: 20000]
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 dataLen = len(CSIa1Orig)
+print(dataLen)
 
 # segLen = 5
 # keyLen = 128 * segLen
-segLen = 7
-keyLen = 256 * segLen
+segLen = 5
+keyLen = 512 * segLen
 rec = True
 tell = True
 
@@ -151,10 +165,10 @@ codings = ""
 
 # static indoor
 # for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
-# for staInd in range(0, int(dataLen / 5), int(keyLen / 5)):
 for staInd in range(0, dataLen, keyLen):
     cnt = 0
     maxSum2 = -1
+
     while True:
         start = time.time()
         cnt += 1
@@ -162,6 +176,7 @@ for staInd in range(0, dataLen, keyLen):
         print("range:", staInd, endInd)
         if endInd >= len(CSIa1Orig):
             break
+
         times += 1
 
         # np.random.seed(1)
@@ -223,6 +238,10 @@ for staInd in range(0, dataLen, keyLen):
             tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
             tmpCSIe1 = np.matmul(tmpCSIe1, randomMatrix)
             tmpCSIe2 = np.matmul(tmpCSIe2, randomMatrix)
+            # tmpCSIa1 = np.matmul(tmpCSIa1, np.outer(tmpCSIa1, tmpCSIa1))
+            # tmpCSIb1 = np.matmul(tmpCSIb1, np.outer(tmpCSIb1, tmpCSIb1))
+            # tmpCSIe1 = np.matmul(tmpCSIe1, np.outer(tmpCSIe1, tmpCSIe1))
+            # tmpCSIe2 = np.matmul(tmpCSIe2, np.outer(tmpCSIe2, tmpCSIe2))
             # inference attack
             tmpNoise = np.matmul(np.ones(keyLen), randomMatrix)
         else:
@@ -235,9 +254,9 @@ for staInd in range(0, dataLen, keyLen):
         # tmpCSIa1 = np.array(integral_sq_derivative_increment(tmpCSIa1, tmpNoise)) * tmpCSIa1
         # tmpCSIb1 = np.array(integral_sq_derivative_increment(tmpCSIb1, tmpNoise)) * tmpCSIb1
         # tmpCSIe1 = np.array(integral_sq_derivative_increment(tmpCSIe1, tmpNoise)) * tmpCSIe1
-        print("correlation a-e1", pearsonr(tmpCSIa1, tmpCSIe1)[0])
-        print("correlation a-e2", pearsonr(tmpCSIa1, tmpCSIe2)[0])
-        print("correlation a-n", pearsonr(tmpCSIa1, tmpNoise)[0])
+        # print("correlation a-e1", pearsonr(tmpCSIa1, tmpCSIe1)[0])
+        # print("correlation a-e2", pearsonr(tmpCSIa1, tmpCSIe2)[0])
+        # print("correlation a-n", pearsonr(tmpCSIa1, tmpNoise)[0])
         # tmpNoise = np.array(integral_sq_derivative_increment(np.ones(keyLen), tmpNoise)) * np.ones(keyLen)
         # print("correlation a-n'", pearsonr(tmpCSIa1, tmpNoise)[0])
 
@@ -307,6 +326,14 @@ for staInd in range(0, dataLen, keyLen):
                 epiIndClosenessLse1[j] = sum(abs(epiInde1 - np.array(epiInda1)))
                 epiIndClosenessLse2[j] = sum(abs(epiInde2 - np.array(epiInda1)))
                 epiIndClosenessLsn[j] = sum(abs(epiIndn1 - np.array(epiInda1)))
+                # epiIndClosenessLsb[j] = abs(epiIndb1[0] - epiInda1[0]) + abs(epiIndb1[2] - epiInda1[2]) + abs(epiIndb1[4] - epiInda1[4]) + abs(epiIndb1[6] - epiInda1[6])
+                # epiIndClosenessLse1[j] = abs(epiInde1[0] - epiInda1[0]) + abs(epiInde1[2] - epiInda1[2]) + abs(epiInde1[4] - epiInda1[4]) + abs(epiInde1[6] - epiInda1[6])
+                # epiIndClosenessLse2[j] = abs(epiInde2[0] - epiInda1[0]) + abs(epiInde2[2] - epiInda1[2]) + abs(epiInde2[4] - epiInda1[4]) + abs(epiInde2[6] - epiInda1[6])
+                # epiIndClosenessLsn[j] = abs(epiIndn1[0] - epiInda1[0]) + abs(epiIndn1[2] - epiInda1[2]) + abs(epiIndn1[4] - epiInda1[4]) + abs(epiIndn1[6] - epiInda1[6])
+                # epiIndClosenessLsb[j] = abs(epiIndb1[1] - epiInda1[1]) + abs(epiIndb1[3] - epiInda1[3]) + abs(epiIndb1[5] - epiInda1[5]) + abs(epiIndb1[7] - epiInda1[7])
+                # epiIndClosenessLse1[j] = abs(epiInde1[1] - epiInda1[1]) + abs(epiInde1[3] - epiInda1[3]) + abs(epiInde1[5] - epiInda1[5]) + abs(epiInde1[7] - epiInda1[7])
+                # epiIndClosenessLse2[j] = abs(epiInde2[1] - epiInda1[1]) + abs(epiInde2[3] - epiInda1[3]) + abs(epiInde2[5] - epiInda1[5]) + abs(epiInde2[7] - epiInda1[7])
+                # epiIndClosenessLsn[j] = abs(epiIndn1[1] - epiInda1[1]) + abs(epiIndn1[3] - epiInda1[3]) + abs(epiIndn1[5] - epiInda1[5]) + abs(epiIndn1[7] - epiInda1[7])
 
             minEpiIndClosenessLsb[i] = np.argmin(epiIndClosenessLsb)
             minEpiIndClosenessLse1[i] = np.argmin(epiIndClosenessLse1)
@@ -345,10 +372,10 @@ for staInd in range(0, dataLen, keyLen):
         for i in range(len(a_list) - len(n_list)):
             n_list += str(np.random.randint(0, 2))
 
-        print("keys of a:", len(a_list), a_list)
-        print("keys of a:", len(a_list_number), a_list_number)
-        print("keys of b:", len(b_list), b_list)
-        print("keys of b:", len(b_list_number), b_list_number)
+        # print("keys of a:", len(a_list), a_list)
+        # print("keys of a:", len(a_list_number), a_list_number)
+        # print("keys of b:", len(b_list), b_list)
+        # print("keys of b:", len(b_list_number), b_list_number)
         # print("keys of e:", len(e_list), e_list)
         # print("keys of e:", len(e_list_number), e_list_number)
         # print("keys of n:", len(n_list), n_list)
@@ -407,8 +434,8 @@ for staInd in range(0, dataLen, keyLen):
                 for i in range(len(a_list_number)):
                     if a_list_number[i] != b_list_number[i]:
                         trueError.append(i)
-                print("true error", trueError)
-                print("a-b", sum2, sum2 / sum1)
+                # print("true error", trueError)
+                # print("a-b", sum2, sum2 / sum1)
                 reconciliation = b_list_number.copy()
                 reconciliation.sort()
 
@@ -451,7 +478,7 @@ for staInd in range(0, dataLen, keyLen):
                             errorInd.append(repeatNumber[i][j + 1])
                         else:
                             errorInd.append(repeatNumber[i][j])
-                print(errorInd)
+                # print(errorInd)
                 b_list_number1 = b_list_number.copy()
                 for i in errorInd:
                     epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
@@ -473,7 +500,7 @@ for staInd in range(0, dataLen, keyLen):
                     number = bin(b_list_number1[i])[2:].zfill(int(np.log2(len(b_list_number1))))
                     b_list += number
 
-                print("keys of b:", len(b_list_number1), b_list_number1)
+                # print("keys of b:", len(b_list_number1), b_list_number1)
 
                 sum2 = 0
                 for i in range(0, min(len(a_list), len(b_list))):
@@ -487,7 +514,7 @@ for staInd in range(0, dataLen, keyLen):
                     for r in range(len(repeatNumber)):
                         tmp = list(set(repeatNumber[r]) - set(errorInd))
                         errorInd = tmp
-                        print(errorInd)
+                        # print(errorInd)
                         b_list_number2 = b_list_number.copy()
                         for i in errorInd:
                             epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
@@ -520,7 +547,7 @@ for staInd in range(0, dataLen, keyLen):
                 # 正式纠错 end
 
         maxSum2 = max(sum2, maxSum2)
-        print("sum2", maxSum2, sum1)
+        # print("sum2", maxSum2, sum1)
 
         if cnt >= 3 or maxSum2 == sum1:
             print("\033[0;32;40ma-b", maxSum2, maxSum2 / sum1, "\033[0m")

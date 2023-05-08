@@ -1,4 +1,5 @@
 import time
+from tkinter import messagebox
 
 import numpy as np
 from numpy.random import exponential as Exp
@@ -70,39 +71,41 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig)
 
 
-rawData = loadmat("csi_mobile_indoor_1_r.mat")
+fileName = "../data/data_mobile_indoor_1.mat"
+rawData = loadmat(fileName)
 
-CSIa1OrigRaw1 = rawData['testdata'][:, 0]
-CSIb1OrigRaw1 = rawData['testdata'][:, 1]
-
-CSIi1OrigRaw1 = loadmat('csi_mobile_indoor_1_r.mat')['testdata'][:, 0]
-minLen1 = min(len(CSIa1OrigRaw1), len(CSIi1OrigRaw1))
-CSIa1Orig = CSIa1OrigRaw1[:minLen1]
-CSIb1Orig = CSIb1OrigRaw1[:minLen1]
-CSIi1Orig = CSIi1OrigRaw1[:minLen1]
-
+CSIa1Orig = rawData['A'][:, 0]
+CSIb1Orig = rawData['A'][:, 1]
 dataLen = len(CSIa1Orig)
 CSIb1Orig = CSIb1Orig - (np.mean(CSIb1Orig) - np.mean(CSIa1Orig))
 
-entropyTime = time.time()
-entropyThres = 2
-CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 32, dataLen, entropyThres)
+# 固定随机置换的种子
+np.random.seed(1)  # 8 1024 8; 4 128 4
+combineCSIx1Orig = list(zip(CSIa1Orig, CSIb1Orig))
+np.random.shuffle(combineCSIx1Orig)
+CSIa1Orig, CSIb1Orig = zip(*combineCSIx1Orig)
+
+CSIa1Orig = np.array(CSIa1Orig)
+CSIb1Orig = np.array(CSIb1Orig)
+
+# entropyThres = 2
+# CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 6, dataLen, entropyThres)
 # CSIa1Orig, CSIb1Orig = entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres)
 
 CSIa1OrigBack = CSIa1Orig.copy()
 CSIb1OrigBack = CSIb1Orig.copy()
-noiseOrig = np.random.uniform(5, 6, size=dataLen)  ## Multiplication item normal distribution
-noiseOrigBack = noiseOrig.copy()
 
-intvl = 9
-keyLen = 64
+intvl = 1
+keyLen = 32
+
 times = 0
 
 originSum = 0
 correctSum = 0
 originWholeSum = 0
 correctWholeSum = 0
-topNum = 16
+topNum = keyLen
+overhead = 0
 
 for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     processTime = time.time()
@@ -115,7 +118,6 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
 
     CSIa1Orig = CSIa1OrigBack.copy()
     CSIb1Orig = CSIb1OrigBack.copy()
-    noiseOrig = noiseOrigBack.copy()
 
     permLen = len(range(staInd, endInd, intvl))
     origInd = np.array([xx for xx in range(staInd, endInd, 1)])
@@ -174,68 +176,7 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     matchb = [j - permLen for (i, j, wt) in neg_edges if match[i] == j]
     print("--- matchTime %s seconds ---" % (time.time() - matchTime))
 
-    a_list = ""
-    b_list = ""
+    overhead += time.time() - processTime
 
-    # 转为二进制
-    for i in range(len(permInd)):
-        a_list += bin(permInd[i])[2:]
-    for i in range(len(matchb)):
-        b_list += bin(matchb[i])[2:]
-
-    # 转化为keyLen长的bits
-    a_bits = ""
-    b_bits = ""
-
-    rounda = int(len(a_list) / keyLen)
-    remaina = len(a_list) - rounda * keyLen
-    if remaina >= 0:
-        rounda += 1
-
-    for i in range(keyLen):
-        tmp = 0
-        for j in range(rounda):
-            if j * keyLen + i >= len(a_list):
-                continue
-            tmp += int(a_list[j * keyLen + i])
-        a_bits += str(tmp % 2)
-
-    roundb = int(len(b_list) / keyLen)
-    remainb = len(b_list) - roundb * keyLen
-    if remainb >= 0:
-        roundb += 1
-
-    for i in range(keyLen):
-        tmp = 0
-        for j in range(roundb):
-            if j * keyLen + i >= len(b_list):
-                continue
-            tmp += int(b_list[j * keyLen + i])
-        b_bits += str(tmp % 2)
-
-    print("keys of a:", len(a_list), a_list)
-    print("keys of a:", len(a_bits), a_bits)
-    print("keys of b:", len(b_list), b_list)
-    print("keys of b:", len(b_bits), b_bits)
-
-    sum1 = min(len(a_bits), len(b_bits))
-    sum2 = 0
-    for i in range(0, sum1):
-        sum2 += (a_bits[i] == b_bits[i])
-    if sum2 == sum1:
-        print("\033[0;32;40ma-b", sum2, sum2 / sum1, "\033[0m")
-    else:
-        print("\033[0;31;40ma-b", sum2, sum2 / sum1, "\033[0m")
-
-    originSum += sum1
-    correctSum += sum2
-
-    originWholeSum += 1
-    correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
-
-print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)
-print("a-b whole match", correctWholeSum, "/", originWholeSum, "=", correctWholeSum / originWholeSum)
-# csi_csv.write(
-#     fileNameA + ',' + str(times) + ',' + str(intvl) + ',' + str(topNum) + ',' + str(correctSum / originSum) + ','
-#     + str(correctWholeSum / originWholeSum) + '\n')
-# csi_csv.close()
+print(times)
+print(overhead / times)

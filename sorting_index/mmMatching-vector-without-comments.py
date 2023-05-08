@@ -1,4 +1,5 @@
 import time
+from tkinter import messagebox
 
 import numpy as np
 from numpy.random import exponential as Exp
@@ -70,7 +71,7 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig)
 
 
-fileName = "../data/data_static_indoor_1.mat"
+fileName = "../data/data_mobile_indoor_1.mat"
 rawData = loadmat(fileName)
 
 CSIa1Orig = rawData['A'][:, 0]
@@ -94,15 +95,52 @@ CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 6, dataLen, entrop
 CSIa1OrigBack = CSIa1Orig.copy()
 CSIb1OrigBack = CSIb1Orig.copy()
 
-intvl = 7
-keyLen = 256
+intvl = 5
+keyLen = 1024
+
+# intvl = 7
+# keyLen = 512
+# 1.0 1.0 1.0 1.0 (0.923235445646574 0.923235445646574)
+# 1.0 1.0 1.0 1.0 (0.5314353499406881 0.5314353499406881)
+# 0.4995814732 0.0 1.0 0.4995814732142857 (0.9985273631840796 0.49884577114427864)
+# 0.9700520833 0.5 1.0 0.9700520833333334 (0.9588014981273407 0.930087390761548)
+
+# intvl = 6
+# keyLen = 512
+# 1.0 1.0 1.0 1.0 (0.9496136012364761 0.9496136012364761)
+# 0.525390625 0.0 1.0 0.525390625 (0.911032028469751 0.4786476868327403)
+
+# intvl = 5
+# keyLen = 512
+# topNum = 64
+# 0.9977058532 0.4285714286 1.8 1.7958705357142857
+
+# intvl = 5
+# keyLen = 1024
+# mi (topNum=16) 0.9927734375 0.0 2.0 1.985546875 (1.5826893353941268 1.5712519319938175)
+# mi (topNum=32) 0.9938802083 0.0 2.0 1.9877604166666667 (1.5826893353941267 1.5730036063884596)
+# mi (topNum=8) 0.9904296875 0.0 2.0 1.980859375 (1.5826893353941267 1.5675425038639876)
+
+# si (topNum=16) 0.805651738 0.0 1.9890830592105264 1.6025082236842105 (1.9253532338308457 1.5511641791044777)
+# si (topNum=32) 0.8414370888 0.0 2.0 1.6828741776315792 (1.9359203980099502 1.628955223880597)
+# si (topNum=64) 0.8419202303 0.0 2.0 1.6838404605263158 (1.9359203980099502 1.6298905472636815)
+
+# mo (topNum=1024) 0.9537109375 0.0 2.0 1.907421875
+# mo (topNum=16) 0.9509765625 0.0 2.0 1.901953125 (1.5183867141162515 1.4439501779359432)
+
+# so (topNum=16) 0.7171380615 0.0 1.949072265625 1.39775390625
+# so (topNum=1024) 0.9076660156 0.0 2.0 1.81533203125 (1.8262885678616017 1.6576600677724274)
+
 times = 0
 
 originSum = 0
 correctSum = 0
 originWholeSum = 0
 correctWholeSum = 0
-topNum = 256
+topNum = 64
+overhead = 0
+
+print("sample number", len(CSIa1Orig))
 
 for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     processTime = time.time()
@@ -135,6 +173,7 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     edgesn = []
     matchSort = []
 
+    start = time.time()
     for ii in range(permLen):
         coefLs = []
         aIndVec = np.array([aa for aa in range(permOrigInd[ii], permOrigInd[ii] + intvl, 1)])  ## for permuted CSIa1
@@ -173,47 +212,56 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     matchb = [j - permLen for (i, j, wt) in neg_edges if match[i] == j]
     print("--- matchTime %s seconds ---" % (time.time() - matchTime))
 
-    a_list = ""
-    b_list = ""
+    overhead += time.time() - start
 
-    print(list(permInd))
-    print(list(matchb))
-
-    # 转为二进制
-    for i in range(len(permInd)):
-        a_list += bin(permInd[i])[2:]
-    for i in range(len(matchb)):
-        b_list += bin(matchb[i])[2:]
+    a_list = permInd
+    b_list = matchb
+    # a_list = ""
+    # b_list = ""
 
     # 转化为keyLen长的bits
     a_bits = ""
     b_bits = ""
 
-    rounda = int(len(a_list) / keyLen)
-    remaina = len(a_list) - rounda * keyLen
-    if remaina >= 0:
-        rounda += 1
+    # 转成二进制，0填充成0000
+    for i in range(len(permInd)):
+        number = bin(permInd[i])[2:].zfill(int(np.log2(len(permInd))))
+        a_bits += number
+    for i in range(len(matchb)):
+        number = bin(matchb[i])[2:].zfill(int(np.log2(len(matchb))))
+        b_bits += number
 
-    for i in range(keyLen):
-        tmp = 0
-        for j in range(rounda):
-            if j * keyLen + i >= len(a_list):
-                continue
-            tmp += int(a_list[j * keyLen + i])
-        a_bits += str(tmp % 2)
-
-    roundb = int(len(b_list) / keyLen)
-    remainb = len(b_list) - roundb * keyLen
-    if remainb >= 0:
-        roundb += 1
-
-    for i in range(keyLen):
-        tmp = 0
-        for j in range(roundb):
-            if j * keyLen + i >= len(b_list):
-                continue
-            tmp += int(b_list[j * keyLen + i])
-        b_bits += str(tmp % 2)
+    # 转为二进制
+    # for i in range(len(permInd)):
+    #     a_list += bin(permInd[i])[2:]
+    # for i in range(len(matchb)):
+    #     b_list += bin(matchb[i])[2:]
+    #
+    # rounda = int(len(a_list) / keyLen)
+    # remaina = len(a_list) - rounda * keyLen
+    # if remaina >= 0:
+    #     rounda += 1
+    #
+    # for i in range(keyLen):
+    #     tmp = 0
+    #     for j in range(rounda):
+    #         if j * keyLen + i >= len(a_list):
+    #             continue
+    #         tmp += int(a_list[j * keyLen + i])
+    #     a_bits += str(tmp % 2)
+    #
+    # roundb = int(len(b_list) / keyLen)
+    # remainb = len(b_list) - roundb * keyLen
+    # if remainb >= 0:
+    #     roundb += 1
+    #
+    # for i in range(keyLen):
+    #     tmp = 0
+    #     for j in range(roundb):
+    #         if j * keyLen + i >= len(b_list):
+    #             continue
+    #         tmp += int(b_list[j * keyLen + i])
+    #     b_bits += str(tmp % 2)
 
     # print("keys of a:", len(a_list), a_list)
     # print("keys of a:", len(a_bits), a_bits)
@@ -238,6 +286,10 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
 print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)
 print("a-b whole match", correctWholeSum, "/", originWholeSum, "=", correctWholeSum / originWholeSum)
 print(times)
-# csv.write(fileName + ',' + str(times) + ',' + str(intvl) + ',' + str(topNum) + ',' + str(correctSum / originSum) + ','
-#           + str(correctWholeSum / originWholeSum) + '\n')
-# csv.close()
+print(overhead / times)
+print(originSum / len(CSIa1Orig))
+print(correctSum / len(CSIa1Orig))
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10),
+      originSum / times / keyLen / intvl,
+      correctSum / times / keyLen / intvl)
+messagebox.showinfo("提示", "测试结束")

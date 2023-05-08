@@ -47,8 +47,8 @@ dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
 CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
 
-segLen = 6
-keyLen = 256 * segLen
+segLen = 5
+keyLen = 512 * segLen
 
 originSum = 0
 correctSum = 0

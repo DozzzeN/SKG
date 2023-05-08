@@ -71,7 +71,7 @@ noiseWholeSum = 0
 times = 0
 overhead = 0
 
-addNoise = ""
+addNoise = "mul"
 codings = ""
 
 for staInd in range(0, int(dataLen / 1), int(keyLen)):
