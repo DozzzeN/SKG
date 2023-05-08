@@ -5,10 +5,10 @@ import gurobipy as gp
 
 
 # 输入向量长度
-N = 2
+N = 128
 singular = True
 
-while N < 64:
+while N < 256:
     N = N * 2
     # 输出向量长度
     L = N
@@ -20,20 +20,22 @@ while N < 64:
     attempts = 100  # 对实际结果影响不大
     dotsEst = 0
     dotsGue = 0
+    corrEsts = []
+    corrGues = []
 
     notFoundSolution = 0
     for attempt in range(attempts):
         np.random.seed((10 ** attempt + 1) % (2 ** 32 - 1))  # 保证不同的K1下，随机数相同
-        x = np.random.uniform(0, 1, N)
+        x = np.random.normal(0, 1, N)
         np.random.seed((10 ** attempt + 2) % (2 ** 32 - 1))
-        xr = np.random.uniform(0, 1, N)
+        xr = np.random.normal(0, 1, N)
 
         np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
         if singular:
-            r = np.random.uniform(0, 1, size=(L, N - 1))
+            r = np.random.normal(0, 1, size=(L, N - 1))
             linearElement = []
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
-            randomCoff = np.random.uniform(0, 1, size=N - 1)
+            randomCoff = np.random.normal(0, 1, size=N - 1)
             for i in range(N):
                 linearElement.append(np.sum(np.multiply(randomCoff, r[i])))
             # 随机选一列插入
@@ -41,7 +43,7 @@ while N < 64:
             randomIndex = np.random.randint(0, N)
             r = np.insert(r, randomIndex, linearElement, axis=1)
         else:
-            r = np.random.uniform(0, 1, size=(L, N))
+            r = np.random.normal(0, 1, size=(L, N))
 
         y = np.matmul(r, x)
         rir = np.matmul(r, np.linalg.pinv(r))
@@ -66,7 +68,7 @@ while N < 64:
         for i in range(len(dk)):
             model.addConstr(np.dot(dk[i], np.array(inputs)) >= 0, name=f'c{i}')
 
-        params = {"NonConvex": 2, "OutputFlag": 0, 'LogToConsole': 0}
+        params = {"NonConvex": 2, "OutputFlag": 0, "LogToConsole": 0}
         # set OutputFlag to 0 to suppress solver output
         for key, value in params.items():
             model.setParam(key, value)
@@ -81,31 +83,105 @@ while N < 64:
             notFoundSolution += 1
             xe = xr
 
+        xe = xe @ np.linalg.pinv(r.T @ r) @ r.T  # 恢复x
         dotsEst += abs(np.dot(x.T, xe) / (np.linalg.norm(x, ord=2) * np.linalg.norm(xe, ord=2)))
         dotsGue += abs(np.dot(x.T, xr) / (np.linalg.norm(x, ord=2) * np.linalg.norm(xr, ord=2)))
         corrEst += abs(pearsonr(x.flatten(), xe.flatten())[0])
         corrGue += abs(pearsonr(x.flatten(), xr.flatten())[0])
+        corrEsts.append(pearsonr(x.flatten(), xe.flatten())[0])
+        corrGues.append(pearsonr(x.flatten(), xr.flatten())[0])
     print(corrEst / attempts, corrGue / attempts)
     print(dotsEst / attempts, dotsGue / attempts)
+    print("mean", np.mean(corrEsts), np.mean(corrGues))
+    print("var", np.var(corrEsts), np.var(corrGues))
+    print("max", np.max(corrEsts), np.max(corrGues))
     print("notFoundSolution", notFoundSolution)
 
+# 没有恢复x non-singular
+# normal
 # 4
-# 0.5692086725198601 0.48774881480077253
-# 0.531548670314852 0.7937770167377599
-# notFoundSolution 0
+# 0.49663845279925956 0.4734106142203007
+# 0.42401595852808655 0.43251120262193665
 # 8
-# 0.3166160806324376 0.2944898737295601
-# 0.3805353477097866 0.7596331667852055
-# notFoundSolution 0
+# 0.3093940117829977 0.30412381844101716
+# 0.2894194947412508 0.2934721449407642
 # 16
-# 0.20149163426193234 0.18853370905441263
-# 0.2788700586229442 0.7484796357213649
-# notFoundSolution 0
+# 0.1965349821887396 0.20406125704248823
+# 0.18991604492567724 0.2032034798912373
 # 32
-# 0.13396230922793137 0.14217614542690932
-# 0.2076169553313932 0.7491604932095164
-# notFoundSolution 0
+# 0.1313358815507023 0.14526641088711542
+# 0.13076005673513635 0.1464511812521984
 # 64
-# 0.1214557729990168 0.10066655376774966
-# 0.18419276640610519 0.7498649056676492
-# notFoundSolution 0
+# 0.09419562299759011 0.08972488609502634
+# 0.09471724085517122 0.0925229137578305
+# 128
+# 0.071561126266906 0.07077179758272809
+# 0.07121297753850463 0.07183708687369088
+# 256
+# 0.05009944453002439 0.04756697099122104
+# 0.05003958997613279 0.047808218980279794
+
+# 没有恢复x singular
+# normal
+# 4
+# 0.49663845279925956 0.4734106142203007
+# 0.42401595852808655 0.43251120262193665
+# 8
+# 0.3239211739984451 0.30412381844101716
+# 0.3188223208523657 0.2934721449407642
+# 16
+# 0.22884528468408236 0.20406125704248823
+# 0.21563274104468114 0.2032034798912373
+# 32
+# 0.1313358815507023 0.14526641088711542
+# 0.13076005673513635 0.1464511812521984
+# 64
+# 0.09419562299759011 0.08972488609502634
+# 0.09471724085517122 0.0925229137578305
+# 128
+# 0.06511280431644367 0.07077179758272809
+# 0.06508194482126499 0.07183708687369088
+# 256
+# 0.044373448997020226 0.04756697099122104
+# 0.04369631464032248 0.047808218980279794
+
+# 恢复x non-singular
+# 4
+# 0.5311862321886537 0.4734106142203007
+# 0.44199390397337396 0.43251120262193665
+# 8
+# 0.29867535334057405 0.30412381844101716
+# 0.2906685340403372 0.2934721449407642
+# 16
+# 0.20598584627473315 0.20406125704248823
+# 0.19962057506216252 0.2032034798912373
+# 32
+# 0.13785186545041025 0.14526641088711542
+# 0.13419384341840265 0.1464511812521984
+# 64
+# 0.08575815966567277 0.08972488609502634
+# 0.08709282155092855 0.0925229137578305
+# 128
+# 0.0588940998849472 0.07077179758272809
+# 0.05882981090135704 0.07183708687369088
+
+# 恢复x singular
+# normal
+# 4
+# 0.5490192830734251 0.4734106142203007
+# 0.4749995242151396 0.43251120262193665
+# 8
+# 0.3193037250531577 0.30412381844101716
+# 0.2959498200737098 0.2934721449407642
+# 16
+# 0.20598584627473315 0.20406125704248823
+# 0.19962057506216252 0.2032034798912373
+# 32
+# 0.13785186545041025 0.14526641088711542
+# 0.13419384341840265 0.1464511812521984
+# 64
+# 0.10537236019343671 0.08972488609502634
+# 0.10589734796347536 0.0925229137578305
+# 128
+# 0.055098488837267735 0.07077179758272809
+# 0.05552284146329124 0.07183708687369088

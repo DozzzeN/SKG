@@ -4,10 +4,10 @@ import numpy as np
 from scipy.stats import pearsonr
 
 # 输入向量长度
-N = 2
-singular = True
+N = 128
+singular = False
 
-while N < 64:
+while N < 256:
     N = N * 2
     # 输出向量长度
     L = N
@@ -18,6 +18,8 @@ while N < 64:
     attempts = 100  # 对实际结果影响不大
     dotsEst = 0
     dotsGue = 0
+    corrEsts = []
+    corrGues = []
     for attempt in range(attempts):
         np.random.seed((10 ** attempt + 1) % (2 ** 32 - 1))  # 保证不同的K1下，随机数相同
         x = np.random.normal(0, 1, N)
@@ -26,10 +28,10 @@ while N < 64:
 
         np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
         if singular:
-            r = np.random.uniform(0, 1, size=(1, L, N - 1))
+            r = np.random.normal(0, 1, size=(1, L, N - 1))
             linearElement = []
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
-            randomCoff = np.random.uniform(0, 1, size=N - 1)
+            randomCoff = np.random.normal(0, 1, size=N - 1)
             for i in range(N):
                 linearElement.append(np.sum(np.multiply(randomCoff, r[0][i])))
             # 随机选一列插入
@@ -37,7 +39,7 @@ while N < 64:
             randomIndex = np.random.randint(0, N)
             r = np.array([np.insert(r[0], randomIndex, linearElement, axis=1)])
         else:
-            r = np.random.uniform(0, 1, size=(1, L, N))
+            r = np.random.normal(0, 1, size=(1, L, N))
 
         # x = np.array([1, 2, 3])
         # r = np.array([[[1, 0, 1], [-1, 0, 0], [0, 0, 1]],
@@ -69,7 +71,8 @@ while N < 64:
                     if np.isclose(y[i][j], yMin):
                         yMinIndex.append([i, j])
             kStar = r[yMinIndex[0][0]][yMinIndex[0][1]]
-            xe = np.array(xe.T - np.dot(kStar, xe) * np.array(kStar).T / np.linalg.norm(kStar, ord=2)).T
+            # xe = np.array(xe.T - np.dot(kStar, xe) * np.array(kStar).T / np.linalg.norm(kStar, ord=2)).T
+            xe = np.array(xe.T - np.dot(kStar, xe) * np.array(kStar).T).T
             xe = xe / np.linalg.norm(xe, ord=2)
         # print(x.T)
         # print(xe.T)
@@ -84,8 +87,13 @@ while N < 64:
         dotsGue += abs(np.dot(x.T, xr) / (np.linalg.norm(x, ord=2) * np.linalg.norm(xr, ord=2)))
         corrEst += abs(pearsonr(x.flatten(), xe.flatten())[0])
         corrGue += abs(pearsonr(x.flatten(), xr.flatten())[0])
+        corrEsts.append(pearsonr(x.flatten(), xe.flatten())[0])
+        corrGues.append(pearsonr(x.flatten(), xr.flatten())[0])
     print(corrEst / attempts, corrGue / attempts)
     print(dotsEst / attempts, dotsGue / attempts)
+    print("mean", np.mean(corrEsts), np.mean(corrGues))
+    print("var", np.var(corrEsts), np.var(corrGues))
+    print("max", np.max(corrEsts), np.max(corrGues))
 
 # non-singular
 # 4
@@ -103,20 +111,32 @@ while N < 64:
 # 64
 # 0.1152973059449252 0.08972488609502634
 # 0.11440410324362255 0.09252291375783049
+# 128
+# 0.07001406761328152 0.07077179758272807
+# 0.0692735358555868 0.07183708687369089
+# 256
+# 0.050606566736012645 0.04756697099122104
+# 0.05085586626250585 0.04780821898027976
 
 # singular
 # 4
-# 0.6075516589911141 0.47341061422030056
-# 0.5315512298005308 0.43251120262193665
+# 0.5168947230256484 0.47341061422030056
+# 0.40079670686240043 0.43251120262193665
 # 8
-# 0.4428249794875543 0.30412381844101716
-# 0.4434130706246545 0.29347214494076423
+# 0.31182393878344383 0.30412381844101716
+# 0.282356812560248 0.29347214494076423
 # 16
-# 0.20847648910023175 0.20406125704248826
-# 0.20826897363836377 0.2032034798912373
+# 0.20218377393816753 0.20406125704248826
+# 0.19676756448061195 0.2032034798912373
 # 32
-# 0.15807267457985766 0.14526641088711542
-# 0.16250744025242167 0.14645118125219836
+# 0.14407989159278642 0.14526641088711542
+# 0.14314175991547812 0.14645118125219836
 # 64
-# 0.10157551634864166 0.08972488609502634
-# 0.10115760162202765 0.09252291375783049
+# 0.1043176391962636 0.08972488609502634
+# 0.10304375828633708 0.09252291375783049
+# 128
+# 0.06555405736590224 0.07077179758272807
+# 0.06507638722074659 0.07183708687369089
+# 256
+# 0.05052857246254038 0.04756697099122104
+# 0.051359409963942865 0.04780821898027976

@@ -71,7 +71,7 @@ while N < 64:
         #     exec("model.x" + str(i) + ".setlb(0)")
         #     exec("model.x" + str(i) + ".setub(10000)")
 
-        solver = pyo.SolverFactory('baron', executable="C:\\baron\\baron.exe")
+        solver = pyo.SolverFactory('baron', executable="D:\\baron\\baron.exe")
 
         # more than 10 constraints and should buy a license
         # https://stackoverflow.com/questions/61231085/valueerror-cannot-load-a-solverresults-object-with-bad-status-aborted
