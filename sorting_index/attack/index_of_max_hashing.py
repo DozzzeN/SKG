@@ -4,12 +4,12 @@ import numpy as np
 from scipy.stats import pearsonr
 
 # 输入向量长度
-N = 16
+N = 8
 # 随机矩阵个数
-K1 = 32
-singular = False
+K1 = 16
+singular = True
 
-while N < 32:
+while N < 16:
     N = N * 2
     # 输出向量长度
     L = N
@@ -35,7 +35,7 @@ while N < 32:
             linearElement = []
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
             randomCoff = np.random.uniform(0, 1, size=N - 1)
-            for i in range(N):
+            for i in range(L):
                 linearElement.append(np.sum(np.multiply(randomCoff, r[0][i])))
             # 随机选一列插入
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))

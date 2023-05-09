@@ -5,13 +5,13 @@ import gurobipy as gp
 
 
 # 输入向量长度
-N = 128
+N = 8
 singular = True
 
-while N < 256:
+while N < 16:
     N = N * 2
     # 输出向量长度
-    L = N
+    L = N * 4
 
     print(N)
 
@@ -36,7 +36,7 @@ while N < 256:
             linearElement = []
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
             randomCoff = np.random.normal(0, 1, size=N - 1)
-            for i in range(N):
+            for i in range(L):
                 linearElement.append(np.sum(np.multiply(randomCoff, r[i])))
             # 随机选一列插入
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
@@ -47,11 +47,11 @@ while N < 256:
 
         y = np.matmul(r, x)
         rir = np.matmul(r, np.linalg.pinv(r))
-        M = rir - np.array(np.eye(N))
+        M = rir - np.array(np.eye(L))
 
         model = gp.Model()
         inputs = []
-        for i in range(N):
+        for i in range(L):
             inputs.append(model.addVar(lb=-100, ub=100, name=f'x{i}'))
         obj = sum(np.dot(M, inputs) ** 2)
         model.setObjective(obj, sense=gp.GRB.MINIMIZE)
@@ -60,7 +60,7 @@ while N < 256:
         dk = []
         for j in range(len(r) - 1, 0, -1):
             # 将y的不等式转为向量
-            dktmp = np.zeros(N)
+            dktmp = np.zeros(L)
             dktmp[ra[j]] = 1
             dktmp[ra[j - 1]] = -1
             dk.append(dktmp)
@@ -83,7 +83,7 @@ while N < 256:
             notFoundSolution += 1
             xe = xr
 
-        xe = xe @ np.linalg.pinv(r.T @ r) @ r.T  # 恢复x
+        xe = np.linalg.pinv(r.T @ r) @ r.T @ xe # 恢复x
         dotsEst += abs(np.dot(x.T, xe) / (np.linalg.norm(x, ord=2) * np.linalg.norm(xe, ord=2)))
         dotsGue += abs(np.dot(x.T, xr) / (np.linalg.norm(x, ord=2) * np.linalg.norm(xr, ord=2)))
         corrEst += abs(pearsonr(x.flatten(), xe.flatten())[0])

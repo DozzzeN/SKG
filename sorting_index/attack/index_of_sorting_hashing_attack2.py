@@ -4,13 +4,13 @@ import numpy as np
 from scipy.stats import pearsonr
 
 # 输入向量长度
-N = 128
-singular = False
+N = 8
+singular = True
 
-while N < 256:
+while N < 16:
     N = N * 2
     # 输出向量长度
-    L = N
+    L = N * 4
 
     print(N)
     corrEst = 0
@@ -32,7 +32,7 @@ while N < 256:
             linearElement = []
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
             randomCoff = np.random.normal(0, 1, size=N - 1)
-            for i in range(N):
+            for i in range(L):
                 linearElement.append(np.sum(np.multiply(randomCoff, r[0][i])))
             # 随机选一列插入
             np.random.seed((10 ** attempt + 3) % (2 ** 32 - 1))
