@@ -37,15 +37,22 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_mobile_indoor_1.mat")
+# rawData = loadmat("../../data/data_mobile_indoor_1.mat")
+rawData = loadmat("../../csi/csi_static_outdoor_r.mat")
 # data BMR KMR BGR BGR-with-no-error
 # mi1 0.9794270833  0.0             0.7912223767578427  0.7749446247360017
 # si1 0.9924958882  0.1578947368    0.9679601990049751  0.9606965174129353
 # mo1 0.921484375   0.0             0.7590808005930318  0.6994810971089696
 # so1 0.9625488281  0.0             0.912940756920608   0.8787500557214818
+# csi mi1r 0.9353515625 0.0 0.5329447278026439 0.49849068387634016
+# csi si1r 0.989453125 0.0 0.8486187845303867 0.8396685082872928
+# csi mor 0.9220703125 0.0 0.8436663233779609 0.7779196704428424
+# csi sor 0.9921875 0.0 0.5184285135682463 0.5143782908059943
 
-CSIa1Orig = rawData['A'][:, 0]
-CSIb1Orig = rawData['A'][:, 1]
+# CSIa1Orig = rawData['testdata'][:, 0]
+# CSIb1Orig = rawData['testdata'][:, 1]
+CSIa1Orig = np.tile(rawData['testdata'][:, 0], 5)
+CSIb1Orig = np.tile(rawData['testdata'][:, 1], 5)
 # stalking attack
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
