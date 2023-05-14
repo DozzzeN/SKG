@@ -4,11 +4,13 @@ linewid = 1;
 
 figure(1)
 % f1出现bug
-[f1,x1]=ksdensity(legiCorr);
-[f2,x2]=ksdensity(randomCorr);
-[f3,x3]=ksdensity(inferCorr);
-[f4,x4]=ksdensity(imitCorr);
-[f5,x5]=ksdensity(stalkCorr);
+nums=99;
+[f1,x1]=ksdensity(legiCorr(1:nums));
+[f2,x2]=ksdensity(randomCorr(1:nums));
+[f3,x3]=ksdensity(inferCorr(1:nums));
+[f4,x4]=ksdensity(imitCorr(1:nums));
+[f5,x5]=ksdensity(stalkCorr(1:nums));
+
 f1=f1/length(legiCorr);
 f2=f2/length(randomCorr);
 f3=f3/length(inferCorr);

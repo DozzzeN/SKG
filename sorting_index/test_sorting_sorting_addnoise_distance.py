@@ -78,12 +78,6 @@ for keyLen in keyLens:
     distance_n2 = 0
     distance_n3 = 0
     distance_n4 = 0
-    real_dist_e1 = 0
-    real_dist_e2 = 0
-    real_dist_n1 = 0
-    real_dist_n2 = 0
-    real_dist_n3 = 0
-    real_dist_n4 = 0
 
     mhd_e1_dist = 0
     mhd_e2_dist = 0

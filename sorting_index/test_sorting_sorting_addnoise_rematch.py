@@ -105,10 +105,10 @@ def normal2uniform(data):
     return x_list
 
 
-rawData = loadmat("../data/data_static_indoor_1.mat")
+rawData = loadmat("../data/data_mobile_indoor_1.mat")
 # rawData = loadmat("../skyglow/Scenario2-Office-LoS/data3_upto5.mat")
-corrMatName = "corr_si.mat"
-rssMatName = "corr_si_rss.mat"
+corrMatName = "corr_mi.mat"
+rssMatName = "corr_mi_rss.mat"
 
 # stalking attack
 # CSIe2Orig = loadmat("../skyglow/Scenario3-Mobile2/data_eave_mobile_2.mat")['A'][:, 0]
@@ -137,6 +137,7 @@ CSIe2Orig = loadmat("../skyglow/Scenario2-Office-LoS-eve_NLoS/data_eave_LOS_EVE_
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 dataLen = len(CSIa1Orig)
+print("dataLen: ", dataLen)
 
 rec = True
 tell = True
@@ -198,6 +199,7 @@ episodeLen = 5
 epiLen = roBits
 segLen = 1
 # while epiLen > 2:
+# 只重用一次
 while segLen < episodeLen * 2:
     if segLen == 1:
         segLen = episodeLen
@@ -223,8 +225,8 @@ while segLen < episodeLen * 2:
     stalkCurrRSS = []
 
     # static indoor
-    for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
-    # for staInd in range(0, dataLen, keyLen):
+    # for staInd in range(0, int(dataLen / 5.5), keyLen):
+    for staInd in range(0, dataLen, keyLen):
         cnt = 0
         maxSum2 = -1
         while True:
@@ -781,11 +783,11 @@ for i in range(len(trueRO)):
     imitCorrRSS.append(abs(pearsonr(trueSample[i], imitSample[i])[0]))
     stalkCorrRSS.append(abs(pearsonr(trueSample[i], stalkSample[i])[0]))
 
-# savemat(corrMatName, {"legiCorr": legiCorr, "randomCorr": randomCorr, "inferCorr": inferCorr,
-#                   "imitCorr": imitCorr, "stalkCorr": stalkCorr})
-#
-# savemat(rssMatName, {"legiCorrRSS": legiCorrRSS, "inferCorrRSS": inferCorrRSS,
-#                   "imitCorrRSS": imitCorrRSS, "stalkCorrRSS": stalkCorrRSS})
+savemat(corrMatName, {"legiCorr": legiCorr, "randomCorr": randomCorr, "inferCorr": inferCorr,
+                  "imitCorr": imitCorr, "stalkCorr": stalkCorr})
+
+savemat(rssMatName, {"legiCorrRSS": legiCorrRSS, "inferCorrRSS": inferCorrRSS,
+                  "imitCorrRSS": imitCorrRSS, "stalkCorrRSS": stalkCorrRSS})
 
 print("correlation between the inferred and actual RO")
 print(np.mean(legiCorr), np.min(legiCorr), np.max(legiCorr))
