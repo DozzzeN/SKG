@@ -111,8 +111,3 @@ print("Result bit0 is", get_result(u1_1, v1_1, u1_2, v1_2, q), dec(u1_1, v1_1, q
 print("Result bit1 is", get_result(u2_1, v2_1, u2_2, v2_2, q), dec(u2_1, v2_1, q), dec(u2_2, v2_2, q), dec(u2_12, v2_12, q))
 print("Result bit2 is", get_result(u3_1, v3_1, u3_2, v3_2, q), dec(u3_1, v3_1, q), dec(u3_2, v3_2, q), dec(u3_12, v3_12, q))
 print("Result bit3 is", get_result(u4_1, v4_1, u4_2, v4_2, q), dec(u4_1, v4_1, q), dec(u4_2, v4_2, q), dec(u4_12, v4_12, q))
-
-print("Result bit0 is", dec(u1_1, v1_1, q), dec(u1_2, v1_2, q), dec(u1_N12, v1_N12, q))
-print("Result bit1 is", dec(u2_1, v2_1, q), dec(u2_2, v2_2, q), dec(u2_N12, v2_N12, q))
-print("Result bit2 is", dec(u3_1, v3_1, q), dec(u3_2, v3_2, q), dec(u3_N12, v3_N12, q))
-print("Result bit3 is", dec(u4_1, v4_1, q), dec(u4_2, v4_2, q), dec(u4_N12, v4_N12, q))
