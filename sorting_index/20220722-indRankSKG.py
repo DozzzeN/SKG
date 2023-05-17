@@ -254,10 +254,10 @@ for para in paraLs:
         # tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / (np.max(tmpCSIb1) - np.min(tmpCSIb1))
         # tmpCSIb2 = (tmpCSIb2 - np.min(tmpCSIb2)) / (np.max(tmpCSIb2) - np.min(tmpCSIb2))
 
-        # tmpCSIa1 = np.matmul(tmpCSIa1 - np.mean(tmpCSIa1), noiseOrigMx)
-        # tmpCSIb1 = np.matmul(tmpCSIb1 - np.mean(tmpCSIb1), noiseOrigMx)
-        # # tmpCSIb2 = np.matmul(tmpCSIb2 - np.mean(tmpCSIb2), noiseOrigMx)
-        # tmpCSIb2 = np.matmul(np.ones(epiLen), noiseOrigMx)
+        tmpCSIa1 = np.matmul(tmpCSIa1 - np.mean(tmpCSIa1), noiseOrigMx)
+        tmpCSIb1 = np.matmul(tmpCSIb1 - np.mean(tmpCSIb1), noiseOrigMx)
+        # tmpCSIb2 = np.matmul(tmpCSIb2 - np.mean(tmpCSIb2), noiseOrigMx)
+        tmpCSIb2 = np.matmul(np.ones(epiLen), noiseOrigMx)
 
         minEpiValClosenessLs = np.zeros(keyLen)
         minEpiValClosenessLsAttack = np.zeros(keyLen)

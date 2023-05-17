@@ -1,11 +1,15 @@
 import sys
 
 import numpy as np
+from scipy.io import loadmat
 from scipy.stats import pearsonr
 
 # 输入向量长度
 N = 8
 singular = True
+rawData = loadmat("../../data/data_mobile_indoor_1.mat")
+CSIa1Orig = rawData['A'][:, 0]
+CSIe2Orig = loadmat("../../skyglow/Scenario2-Office-LoS-eve_NLoS/data_eave_LOS_EVE_NLOS.mat")['A'][:, 0]
 
 while N < 16:
     N = N * 2
@@ -20,9 +24,21 @@ while N < 16:
     dotsGue = 0
     corrEsts = []
     corrGues = []
+
+    dotsInf = 0
+    dotsImi = 0
+    dotsSta = 0
+    corrInf = 0
+    corrImi = 0
+    corrSta = 0
+    corrInfs = []
+    corrImis = []
+    corrStas = []
     for attempt in range(attempts):
         np.random.seed((10 ** attempt + 1) % (2 ** 32 - 1))  # 保证不同的K1下，随机数相同
         x = np.random.normal(0, 1, N)
+        startInd = np.random.randint(0, len(CSIa1Orig) - N)
+        # x = CSIa1Orig[startInd:startInd + N]
         np.random.seed((10 ** attempt + 2) % (2 ** 32 - 1))
         xr = np.random.normal(0, 1, N)
 
@@ -89,11 +105,21 @@ while N < 16:
         corrGue += abs(pearsonr(x.flatten(), xr.flatten())[0])
         corrEsts.append(pearsonr(x.flatten(), xe.flatten())[0])
         corrGues.append(pearsonr(x.flatten(), xr.flatten())[0])
-    print(corrEst / attempts, corrGue / attempts)
-    print(dotsEst / attempts, dotsGue / attempts)
-    print("mean", np.mean(corrEsts), np.mean(corrGues))
-    print("var", np.var(corrEsts), np.var(corrGues))
-    print("max", np.max(corrEsts), np.max(corrGues))
+
+        dotsInf += abs(np.dot(x.T, np.ones(len(x))) / (np.linalg.norm(x, ord=2) * np.linalg.norm(np.ones(len(x)), ord=2)))
+        dotsImi += abs(np.dot(x.T, np.random.normal(np.mean(x), np.std(x), len(x))) / (np.linalg.norm(x, ord=2) * np.linalg.norm(np.random.normal(np.mean(x), np.std(x), len(x)), ord=2)))
+        dotsSta += abs(np.dot(x.T, CSIe2Orig[startInd: startInd + N]) / (np.linalg.norm(x, ord=2) * np.linalg.norm(CSIe2Orig[startInd: startInd + N], ord=2)))
+        corrInf += abs(pearsonr(x.flatten(), np.ones(len(x)) + np.random.normal(0, 0.1, N))[0])
+        corrImi += abs(pearsonr(x.flatten(), np.random.normal(np.mean(x), np.std(x), len(x)))[0])
+        corrSta += abs(pearsonr(x.flatten(), CSIe2Orig[startInd: startInd + N] + np.random.normal(0, 0.1, N))[0])
+        corrInfs.append(pearsonr(x.flatten(), np.ones(len(x)) + np.random.normal(0, 0.1, N))[0])
+        corrImis.append(pearsonr(x.flatten(), np.random.normal(np.mean(x), np.std(x), len(x)))[0])
+        corrStas.append(pearsonr(x.flatten(), CSIe2Orig[startInd: startInd + N]+ np.random.normal(0, 0.1, N))[0])
+    print(corrEst / attempts, corrGue / attempts, corrInf / attempts, corrImi / attempts, corrSta / attempts)
+    print(dotsEst / attempts, dotsGue / attempts, dotsInf / attempts, dotsImi / attempts, dotsSta / attempts)
+    print("mean", np.mean(corrEsts), np.mean(corrGues), np.mean(corrInfs), np.mean(corrImis), np.mean(corrStas))
+    print("var", np.var(corrEsts), np.var(corrGues), np.var(corrInfs), np.var(corrImis), np.var(corrStas))
+    print("max", np.max(corrEsts), np.max(corrGues), np.max(corrInfs), np.max(corrImis), np.max(corrStas))
 
 # non-singular
 # 4

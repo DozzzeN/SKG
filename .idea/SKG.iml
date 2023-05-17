@@ -8,7 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/data" />
       <excludeFolder url="file://$MODULE_DIR$/csi/gnuradio" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.9 (SKG)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="D:\Anaconda3" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">

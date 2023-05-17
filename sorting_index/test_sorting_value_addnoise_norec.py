@@ -174,7 +174,7 @@ an4_corr = 0
 
 # static indoor
 # for staInd in range(0, int(dataLen / 3), keyLen):
-for staInd in range(0, int(dataLen / 1), keyLen):
+for staInd in range(0, dataLen, keyLen):
     start = time.time()
 
     endInd = staInd + keyLen
