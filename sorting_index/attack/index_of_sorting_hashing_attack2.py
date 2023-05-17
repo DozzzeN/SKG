@@ -6,12 +6,12 @@ from scipy.stats import pearsonr
 
 # 输入向量长度
 N = 8
-singular = True
+singular = False
 rawData = loadmat("../../data/data_mobile_indoor_1.mat")
 CSIa1Orig = rawData['A'][:, 0]
 CSIe2Orig = loadmat("../../skyglow/Scenario2-Office-LoS-eve_NLoS/data_eave_LOS_EVE_NLOS.mat")['A'][:, 0]
 
-while N < 16:
+while N < 256:
     N = N * 2
     # 输出向量长度
     L = N * 4
