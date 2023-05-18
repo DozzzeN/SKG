@@ -245,10 +245,10 @@ for para in paraLs:
         tmpCSIb1 = tmpCSIb1Back
         tmpCSIb2 = tmpCSIb2Back
 
-        tmpCSIa1 = np.matmul(np.sort(tmpCSIa1) - np.mean(tmpCSIa1), noiseOrigMx)
-        tmpCSIb1 = np.matmul(np.sort(tmpCSIb1) - np.mean(tmpCSIb1), noiseOrigMx)
-        # tmpCSIb2 = np.matmul(np.sort(tmpCSIb2) - np.mean(tmpCSIb2), noiseOrigMx)
-        tmpCSIb2 = np.matmul(np.ones(epiLen), noiseOrigMx)
+        # tmpCSIa1 = np.matmul(np.sort(tmpCSIa1) - np.mean(tmpCSIa1), noiseOrigMx)
+        # tmpCSIb1 = np.matmul(np.sort(tmpCSIb1) - np.mean(tmpCSIb1), noiseOrigMx)
+        # # tmpCSIb2 = np.matmul(np.sort(tmpCSIb2) - np.mean(tmpCSIb2), noiseOrigMx)
+        # tmpCSIb2 = np.matmul(np.ones(epiLen), noiseOrigMx)
 
         # tmpCSIa1 = (tmpCSIa1 - np.min(tmpCSIa1)) / (np.max(tmpCSIa1) - np.min(tmpCSIa1))
         # tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / (np.max(tmpCSIb1) - np.min(tmpCSIb1))
@@ -256,7 +256,7 @@ for para in paraLs:
 
         tmpCSIa1 = np.matmul(tmpCSIa1 - np.mean(tmpCSIa1), noiseOrigMx)
         tmpCSIb1 = np.matmul(tmpCSIb1 - np.mean(tmpCSIb1), noiseOrigMx)
-        # tmpCSIb2 = np.matmul(tmpCSIb2 - np.mean(tmpCSIb2), noiseOrigMx)
+        tmpCSIb2 = np.matmul(tmpCSIb2 - np.mean(tmpCSIb2), noiseOrigMx)
         tmpCSIb2 = np.matmul(np.ones(epiLen), noiseOrigMx)
 
         minEpiValClosenessLs = np.zeros(keyLen)
@@ -280,11 +280,11 @@ for para in paraLs:
 
         ## --------------------------
         ## Display results
-        indClosenessResults = minEpiIndClosenessLs - np.array(range(0, keyLen, 1))
-        print(indClosenessResults)
-        indClosenessResultsAttack = minEpiIndClosenessLsAttack - np.array(range(0, keyLen, 1))
-        print(indClosenessResultsAttack)
-        print(np.mean(abs(indClosenessResultsAttack)))
+        # indClosenessResults = minEpiIndClosenessLs - np.array(range(0, keyLen, 1))
+        # print(indClosenessResults)
+        # indClosenessResultsAttack = minEpiIndClosenessLsAttack - np.array(range(0, keyLen, 1))
+        # print(indClosenessResultsAttack)
+        # print(np.mean(abs(indClosenessResultsAttack)))
         # print(minEpiIndClosenessLs)
         # print(minEpiIndClosenessLsAttack)
         # plt.hist(indClosenessResultsAttack, 20)
