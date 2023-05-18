@@ -46,20 +46,22 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-def filtering(data, step, window):
-    res = []
-    m = int((len(data) - window) / step) + 1
-    for i in range(1, m):
-        res.append(sum(data[1 + (i - 1) * step:window + (i - 1) * step]) / window)
-    return res
+# 若m=10, alpha=0.5, n=100
+# 将[0,100]分为[0,5],[10,15],[20,25],...,[90,95]
+# q=0,10,20,...,100
+# g=5,5,5,...,5
+def quantizer(number, q):
+    for i in range(0, len(q) - 1, 2):
+        if number > q[i] and number < q[i + 1]:
+            return int((i + 1) / 2)
+    return -1
 
 
 rawData = loadmat("../../data/data_mobile_indoor_1.mat")
-# data BMR BGR BGR-with-no-error
-# mi1 0.9581081081  0.0 0.1524751455210426  0.1460876732086746
-# si1 0.8202823359  0.0 0.1649353233830846  0.13529353233830846
-# mo1 0.902027027   0.0 0.13165307635285398 0.11875463306152706
-# so1 0.9473536036  0.0 0.15833816252841795 0.15000222885926984
+# so1 0.7581350729 1.1616814514331566 0.8807114518789284
+# si1 0.6901652145 1.121412935323383 0.7739601990049751
+# mo2 0.7542655786 1.161318113288822 0.875942278699117
+# mi2 0.8129475518 1.161515117455322 0.9442508710801394
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -67,12 +69,9 @@ CSIb1Orig = rawData['A'][:, 1]
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
-segLen = 7
-keyLen = 256 * segLen
+keyLen = 128
 
-step = 4
-window = 8
-
+lossySum = 0
 originSum = 0
 correctSum = 0
 randomSum1 = 0
@@ -122,90 +121,114 @@ for staInd in range(0, int(dataLen), keyLen):
     tmpCSIn1 = np.random.random(keyLen)
 
     # 最后各自的密钥
+    o_list = []  # lossy quantization
     a_list = []
     b_list = []
     e1_list = []
     e2_list = []
     n1_list = []
 
+    o_list_number = []
     a_list_number = []
     b_list_number = []
     e1_list_number = []
     e2_list_number = []
     n1_list_number = []
 
-    # moving average filtering
-    tmpCSIa1 = filtering(tmpCSIa1, step, window)
-    tmpCSIb1 = filtering(tmpCSIb1, step, window)
-    tmpCSIe1 = filtering(tmpCSIe1, step, window)
-    tmpCSIe2 = filtering(tmpCSIe2, step, window)
-    tmpCSIn1 = filtering(tmpCSIn1, step, window)
+    # extracting randomness
+    extCSIn1 = []
+    extCSIa1 = []
+    extCSIb1 = []
+    extCSIe1 = []
+    extCSIe2 = []
+    w = 30
+    for i in range(len(tmpCSIa1)):
+        extCSIa1.append(tmpCSIa1[i] - sum(tmpCSIa1[i - int((w - 1) / 2):i + int(w / 2)]) / w)
+        extCSIb1.append(tmpCSIb1[i] - sum(tmpCSIb1[i - int((w - 1) / 2):i + int(w / 2)]) / w)
+        extCSIe1.append(tmpCSIe1[i] - sum(tmpCSIe1[i - int((w - 1) / 2):i + int(w / 2)]) / w)
+        extCSIe2.append(tmpCSIe2[i] - sum(tmpCSIe2[i - int((w - 1) / 2):i + int(w / 2)]) / w)
+        extCSIn1.append(tmpCSIn1[i] - sum(tmpCSIn1[i - int((w - 1) / 2):i + int(w / 2)]) / w)
 
-    # bidirectional difference quantization
-    # 没有间隔的量化错误的更多
-    for i in range(0, int(len(tmpCSIa1) / 3) * 3, 3):
-        if i + 2 >= len(tmpCSIa1):
-            break
-        if tmpCSIa1[i + 1] - tmpCSIa1[i] >= 0:
-            a_list_number.append(1)
-        else:
-            a_list_number.append(0)
-        if tmpCSIa1[i + 1] - tmpCSIa1[i + 2] >= 0:
-            a_list_number.append(1)
-        else:
-            a_list_number.append(0)
+    # deciding quantization intervals
+    m = 4
+    alpha = 0.3
 
-        if tmpCSIb1[i + 1] - tmpCSIb1[i] >= 0:
-            b_list_number.append(1)
-        else:
-            b_list_number.append(0)
-        if tmpCSIb1[i + 1] - tmpCSIb1[i + 2] >= 0:
-            b_list_number.append(1)
-        else:
-            b_list_number.append(0)
+    sortCSIa1 = extCSIa1.copy()
+    sortCSIb1 = extCSIb1.copy()
+    sortCSIe1 = extCSIe1.copy()
+    sortCSIe2 = extCSIe2.copy()
+    sortCSIn1 = extCSIn1.copy()
 
-        if tmpCSIe1[i + 1] - tmpCSIe1[i] >= 0:
-            e1_list_number.append(1)
-        else:
-            e1_list_number.append(0)
-        if tmpCSIe1[i + 1] - tmpCSIe1[i + 2] >= 0:
-            e1_list_number.append(1)
-        else:
-            e1_list_number.append(0)
+    sortCSIa1.sort()
+    sortCSIb1.sort()
+    sortCSIe1.sort()
+    sortCSIe2.sort()
+    sortCSIn1.sort()
 
-        if tmpCSIe2[i + 1] - tmpCSIe2[i] >= 0:
-            e2_list_number.append(1)
-        else:
-            e2_list_number.append(0)
-        if tmpCSIe2[i + 1] - tmpCSIe2[i + 2] >= 0:
-            e2_list_number.append(1)
-        else:
-            e2_list_number.append(0)
+    qa = []
+    qb = []
+    qe1 = []
+    qe2 = []
+    qn1 = []
 
-        if tmpCSIn1[i + 1] - tmpCSIn1[i] >= 0:
-            n1_list_number.append(1)
-        else:
-            n1_list_number.append(0)
-        if tmpCSIn1[i + 1] - tmpCSIn1[i + 2] >= 0:
-            n1_list_number.append(1)
-        else:
-            n1_list_number.append(0)
+    interval = int(keyLen * (1 - alpha) / m)
+    for i in range(0, len(sortCSIa1), interval):
+        qa.append(sortCSIa1[i])
+        qb.append(sortCSIb1[i])
+        qe1.append(sortCSIe1[i])
+        qe2.append(sortCSIe2[i])
+        qn1.append(sortCSIn1[i])
+
+    # keyLen=30，alpha=0.2，m=4时
+    # fallIn=30*(1-0.2)/4=6, fallOut=30*0.2/(4-1)=2
+    # 0-6 8-14 16-22 24-30
+    # fallIn = int(keyLen * (1 - alpha) / m)
+    # fallOut = int(keyLen * alpha / (m - 1))
+    # i = 0
+    # while i + fallIn < len(sortCSIa1):
+    #     qa.append(sortCSIa1[i])
+    #     qa.append(sortCSIa1[i + fallIn])
+    #     qb.append(sortCSIb1[i])
+    #     qb.append(sortCSIb1[i + fallIn])
+    #     qe1.append(sortCSIe1[i])
+    #     qe1.append(sortCSIe1[i + fallIn])
+    #     qe2.append(sortCSIe2[i])
+    #     qe2.append(sortCSIe2[i + fallIn])
+    #     qn1.append(sortCSIn1[i])
+    #     qn1.append(sortCSIn1[i + fallIn])
+    #     i += fallIn + fallOut
+
+    for i in range(keyLen):
+        o_list_number.append(0)
+        if quantizer(extCSIa1[i], qa) != -1:
+            a_list_number.append(quantizer(extCSIa1[i], qa))
+        if quantizer(extCSIb1[i], qb) != -1:
+            b_list_number.append(quantizer(extCSIb1[i], qb))
+        if quantizer(extCSIe1[i], qe1) != -1:
+            e1_list_number.append(quantizer(extCSIe1[i], qe1))
+        if quantizer(extCSIe2[i], qe2) != -1:
+            e2_list_number.append(quantizer(extCSIe2[i], qe2))
+        if quantizer(extCSIn1[i], qn1) != -1:
+            n1_list_number.append(quantizer(extCSIn1[i], qn1))
 
     # 转成二进制，0填充成00
+    for i in range(len(o_list_number)):
+        number = bin(o_list_number[i])[2:].zfill(int(np.log2(m)))
+        o_list += number
     for i in range(len(a_list_number)):
-        number = bin(a_list_number[i])[2:].zfill(1)
+        number = bin(a_list_number[i])[2:].zfill(int(np.log2(m)))
         a_list += number
     for i in range(len(b_list_number)):
-        number = bin(b_list_number[i])[2:].zfill(1)
+        number = bin(b_list_number[i])[2:].zfill(int(np.log2(m)))
         b_list += number
     for i in range(len(e1_list_number)):
-        number = bin(e1_list_number[i])[2:].zfill(1)
+        number = bin(e1_list_number[i])[2:].zfill(int(np.log2(m)))
         e1_list += number
     for i in range(len(e2_list_number)):
-        number = bin(e2_list_number[i])[2:].zfill(1)
+        number = bin(e2_list_number[i])[2:].zfill(int(np.log2(m)))
         e2_list += number
     for i in range(len(n1_list_number)):
-        number = bin(n1_list_number[i])[2:].zfill(1)
+        number = bin(n1_list_number[i])[2:].zfill(int(np.log2(m)))
         n1_list += number
 
     # 对齐密钥，随机补全
@@ -226,6 +249,8 @@ for staInd in range(0, int(dataLen), keyLen):
     print("keys of e2:", len(e2_list_number), e2_list_number)
     # print("keys of n1:", len(n1_list), n1_list)
     print("keys of n1:", len(n1_list_number), n1_list_number)
+
+    lossySum += len(o_list)
 
     sum1 = min(len(a_list), len(b_list))
     sum2 = 0
@@ -251,34 +276,34 @@ for staInd in range(0, int(dataLen), keyLen):
     randomSum2 += sum32
     noiseSum1 += sum41
 
-    decSum1 = min(len(a_list_number), len(b_list_number))
-    decSum2 = 0
-    decSum31 = 0
-    decSum32 = 0
-    decSum41 = 0
-    for i in range(0, decSum1):
-        decSum2 += (a_list_number[i] == b_list_number[i])
-    for i in range(min(len(a_list_number), len(e1_list_number))):
-        decSum31 += (a_list_number[i] == e1_list_number[i])
-    for i in range(min(len(a_list_number), len(e2_list_number))):
-        decSum32 += (a_list_number[i] == e2_list_number[i])
-    for i in range(min(len(a_list_number), len(n1_list_number))):
-        decSum41 += (a_list_number[i] == n1_list_number[i])
-    if decSum1 == 0:
-        continue
-    if decSum2 == decSum1:
-        print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
-    else:
-        print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
-    print("a-e1", decSum31, decSum31 / decSum1)
-    print("a-e2", decSum32, decSum32 / decSum1)
-    print("a-n1", decSum41, decSum41 / decSum1)
-    print("----------------------")
-    originDecSum += decSum1
-    correctDecSum += decSum2
-    randomDecSum1 += decSum31
-    randomDecSum2 += decSum32
-    noiseDecSum1 += decSum41
+    # decSum1 = min(len(a_list_number), len(b_list_number))
+    # decSum2 = 0
+    # decSum31 = 0
+    # decSum32 = 0
+    # decSum41 = 0
+    # for i in range(0, decSum1):
+    #     decSum2 += (a_list_number[i] == b_list_number[i])
+    # for i in range(min(len(a_list_number), len(e1_list_number))):
+    #     decSum31 += (a_list_number[i] == e1_list_number[i])
+    # for i in range(min(len(a_list_number), len(e2_list_number))):
+    #     decSum32 += (a_list_number[i] == e2_list_number[i])
+    # for i in range(min(len(a_list_number), len(n1_list_number))):
+    #     decSum41 += (a_list_number[i] == n1_list_number[i])
+    # if decSum1 == 0:
+    #     continue
+    # if decSum2 == decSum1:
+    #     print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
+    # else:
+    #     print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
+    # print("a-e1", decSum31, decSum31 / decSum1)
+    # print("a-e2", decSum32, decSum32 / decSum1)
+    # print("a-n1", decSum41, decSum41 / decSum1)
+    # print("----------------------")
+    # originDecSum += decSum1
+    # correctDecSum += decSum2
+    # randomDecSum1 += decSum31
+    # randomDecSum2 += decSum32
+    # noiseDecSum1 += decSum41
 
     originWholeSum += 1
     correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
@@ -291,18 +316,20 @@ print("\033[0;32;40ma-b bit agreement rate", correctSum, "/", originSum, "=", ro
 print("a-e1 bit agreement rate", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))
 print("a-e2 bit agreement rate", randomSum2, "/", originSum, "=", round(randomSum2 / originSum, 10))
 print("a-n1 bit agreement rate", noiseSum1, "/", originSum, "=", round(noiseSum1 / originSum, 10))
-print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
-      round(correctDecSum / originDecSum, 10), "\033[0m")
-print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
-print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
-print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
+# print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
+#       round(correctDecSum / originDecSum, 10), "\033[0m")
+# print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
+# print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
+# print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
 print("\033[0;32;40ma-b key agreement rate", correctWholeSum, "/", originWholeSum, "=",
       round(correctWholeSum / originWholeSum, 10), "\033[0m")
 print("a-e1 key agreement rate", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))
 print("a-e2 key agreement rate", randomWholeSum2, "/", originWholeSum, "=", round(randomWholeSum2 / originWholeSum, 10))
 print("a-n1 key agreement rate", noiseWholeSum1, "/", originWholeSum, "=", round(noiseWholeSum1 / originWholeSum, 10))
 print("times", times)
+print("all bits", lossySum)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
 
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig), correctSum / len(CSIa1Orig))
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
+      correctSum / len(CSIa1Orig))

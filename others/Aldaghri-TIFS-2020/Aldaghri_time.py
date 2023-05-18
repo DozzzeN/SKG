@@ -170,4 +170,3 @@ for staInd in range(0, int(dataLen), keyLen):
     overhead += end_time
 print("times", times)
 print("overhead", round(overhead / times, 9))
-

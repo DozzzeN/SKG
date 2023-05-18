@@ -222,43 +222,43 @@ for staInd in range(0, int(dataLen), keyLen):
         sum41 += (a_list[i] == n1_list[i])
 
     print("\033[0;32;40ma-b", sum2, 0 if sum1 == 0 else sum2 / sum1, "\033[0m")
-    print("a-e1", sum31, 0 if sum1 ==0 else sum31 / sum1)
-    print("a-e2", sum32, 0 if sum1 ==0 else sum32 / sum1)
-    print("a-n1", sum41, 0 if sum1 ==0 else sum41 / sum1)
+    print("a-e1", sum31, 0 if sum1 == 0 else sum31 / sum1)
+    print("a-e2", sum32, 0 if sum1 == 0 else sum32 / sum1)
+    print("a-n1", sum41, 0 if sum1 == 0 else sum41 / sum1)
     originSum += sum1
     correctSum += sum2
     randomSum1 += sum31
     randomSum2 += sum32
     noiseSum1 += sum41
 
-    decSum1 = min(len(a_list_number), len(b_list_number))
-    decSum2 = 0
-    decSum31 = 0
-    decSum32 = 0
-    decSum41 = 0
-    for i in range(0, decSum1):
-        decSum2 += (a_list_number[i] == b_list_number[i])
-    for i in range(min(len(a_list_number), len(e1_list_number))):
-        decSum31 += (a_list_number[i] == e1_list_number[i])
-    for i in range(min(len(a_list_number), len(e2_list_number))):
-        decSum32 += (a_list_number[i] == e2_list_number[i])
-    for i in range(min(len(a_list_number), len(n1_list_number))):
-        decSum41 += (a_list_number[i] == n1_list_number[i])
-    if decSum1 == 0:
-        continue
-    if decSum2 == decSum1:
-        print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
-    else:
-        print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
-    print("a-e1", decSum31, decSum31 / decSum1)
-    print("a-e2", decSum32, decSum32 / decSum1)
-    print("a-n1", decSum41, decSum41 / decSum1)
-    print("----------------------")
-    originDecSum += decSum1
-    correctDecSum += decSum2
-    randomDecSum1 += decSum31
-    randomDecSum2 += decSum32
-    noiseDecSum1 += decSum41
+    # decSum1 = min(len(a_list_number), len(b_list_number))
+    # decSum2 = 0
+    # decSum31 = 0
+    # decSum32 = 0
+    # decSum41 = 0
+    # for i in range(0, decSum1):
+    #     decSum2 += (a_list_number[i] == b_list_number[i])
+    # for i in range(min(len(a_list_number), len(e1_list_number))):
+    #     decSum31 += (a_list_number[i] == e1_list_number[i])
+    # for i in range(min(len(a_list_number), len(e2_list_number))):
+    #     decSum32 += (a_list_number[i] == e2_list_number[i])
+    # for i in range(min(len(a_list_number), len(n1_list_number))):
+    #     decSum41 += (a_list_number[i] == n1_list_number[i])
+    # if decSum1 == 0:
+    #     continue
+    # if decSum2 == decSum1:
+    #     print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
+    # else:
+    #     print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
+    # print("a-e1", decSum31, decSum31 / decSum1)
+    # print("a-e2", decSum32, decSum32 / decSum1)
+    # print("a-n1", decSum41, decSum41 / decSum1)
+    # print("----------------------")
+    # originDecSum += decSum1
+    # correctDecSum += decSum2
+    # randomDecSum1 += decSum31
+    # randomDecSum2 += decSum32
+    # noiseDecSum1 += decSum41
 
     originWholeSum += 1
     correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
@@ -271,11 +271,11 @@ print("\033[0;32;40ma-b bit agreement rate", correctSum, "/", originSum, "=", ro
 print("a-e1 bit agreement rate", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))
 print("a-e2 bit agreement rate", randomSum2, "/", originSum, "=", round(randomSum2 / originSum, 10))
 print("a-n1 bit agreement rate", noiseSum1, "/", originSum, "=", round(noiseSum1 / originSum, 10))
-print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
-      round(correctDecSum / originDecSum, 10), "\033[0m")
-print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
-print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
-print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
+# print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
+#       round(correctDecSum / originDecSum, 10), "\033[0m")
+# print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
+# print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
+# print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
 print("\033[0;32;40ma-b key agreement rate", correctWholeSum, "/", originWholeSum, "=",
       round(correctWholeSum / originWholeSum, 10), "\033[0m")
 print("a-e1 key agreement rate", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))

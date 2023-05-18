@@ -39,11 +39,6 @@ def smooth(x, window_len=11, window='hanning'):
 
 
 rawData = loadmat("../../data/data_static_outdoor_1.mat")
-# data BMR BGR BGR-with-no-error
-# mi1 0.942335574   0.0 0.7816411682892906  0.7365682789883068
-# si1 0.6614918132  0.0 0.8203980099502488  0.5426865671641791
-# mo1 0.7867363161  0.0 0.6527798369162342  0.5135656041512231
-# so1 0.8757709251  0.0 0.8095216868006954  0.7089555565461597
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -51,9 +46,8 @@ CSIb1Orig = rawData['A'][:, 1]
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
-# block_size
-segLen = 7
-keyLen = 256 * segLen
+segLen = 25
+keyLen = 1 * segLen
 
 lossySum = 0
 originSum = 0
@@ -91,10 +85,10 @@ for staInd in range(0, int(dataLen), keyLen):
     # imitation attack
     CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=len(CSIa1Orig))
 
-    CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
-    CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
-    CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=30, window='flat')
-    CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=30, window='flat')
+    # CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
+    # CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
+    # CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=30, window='flat')
+    # CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=30, window='flat')
 
     tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
     tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
@@ -124,17 +118,17 @@ for staInd in range(0, int(dataLen), keyLen):
     tmpCSIn1Reshape = np.array(tmpCSIn1).reshape(int(keyLen / segLen), segLen)
 
     # parameters setting in section of comparison
-    alpha = 0.2
+    alpha = 0.8
     m = 2
     for i in range(int(keyLen / segLen)):
         dropTmp = []
         # rangeA1 = max(tmpCSIa1Reshape[i]) - min(tmpCSIa1Reshape[i])
         # nA1 = int(math.log2(rangeA1))
         # single bit quantization
-        q1A1 = np.mean(tmpCSIa1Reshape[i]) + alpha * np.std(tmpCSIa1Reshape[i])
-        q2A1 = np.mean(tmpCSIa1Reshape[i]) - alpha * np.std(tmpCSIa1Reshape[i])
-        q1B1 = np.mean(tmpCSIb1Reshape[i]) + alpha * np.std(tmpCSIb1Reshape[i])
-        q2B1 = np.mean(tmpCSIb1Reshape[i]) - alpha * np.std(tmpCSIb1Reshape[i])
+        q1A1 = np.mean(tmpCSIa1Reshape[i]) + alpha * np.std(tmpCSIa1Reshape[i], ddof=1)
+        q2A1 = np.mean(tmpCSIa1Reshape[i]) - alpha * np.std(tmpCSIa1Reshape[i], ddof=1)
+        q1B1 = np.mean(tmpCSIb1Reshape[i]) + alpha * np.std(tmpCSIb1Reshape[i], ddof=1)
+        q2B1 = np.mean(tmpCSIb1Reshape[i]) - alpha * np.std(tmpCSIb1Reshape[i], ddof=1)
         q1N1 = np.mean(tmpCSIn1Reshape[i]) + alpha * np.std(tmpCSIn1Reshape[i])
         q2N1 = np.mean(tmpCSIn1Reshape[i]) - alpha * np.std(tmpCSIn1Reshape[i])
         q1E1 = np.mean(tmpCSIe1Reshape[i]) + alpha * np.std(tmpCSIe1Reshape[i])
@@ -201,15 +195,15 @@ for staInd in range(0, int(dataLen), keyLen):
         n1_list += str(np.random.randint(0, 2))
 
     # print("keys of a:", len(a_list), a_list)
-    print("keys of a:", len(a_list_number), a_list_number)
+    # print("keys of a:", len(a_list_number), a_list_number)
     # print("keys of b:", len(b_list), b_list)
-    print("keys of b:", len(b_list_number), b_list_number)
+    # print("keys of b:", len(b_list_number), b_list_number)
     # print("keys of e:", len(e_list), e_list)
-    print("keys of e1:", len(e1_list_number), e1_list_number)
+    # print("keys of e1:", len(e1_list_number), e1_list_number)
     # print("keys of e:", len(e_list), e_list)
-    print("keys of e2:", len(e2_list_number), e2_list_number)
+    # print("keys of e2:", len(e2_list_number), e2_list_number)
     # print("keys of n1:", len(n1_list), n1_list)
-    print("keys of n1:", len(n1_list_number), n1_list_number)
+    # print("keys of n1:", len(n1_list_number), n1_list_number)
 
     lossySum += len(o_list)
 
@@ -287,10 +281,9 @@ print("\033[0;32;40ma-b key agreement rate", correctWholeSum, "/", originWholeSu
 print("a-e1 key agreement rate", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))
 print("a-e2 key agreement rate", randomWholeSum2, "/", originWholeSum, "=", round(randomWholeSum2 / originWholeSum, 10))
 print("a-n1 key agreement rate", noiseWholeSum1, "/", originWholeSum, "=", round(noiseWholeSum1 / originWholeSum, 10))
-print("times", times)
+print("times", times, originWholeSum)
 print("all bits", lossySum)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
-
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
-      correctSum / len(CSIa1Orig))
+print(originSum / times / keyLen)
+print(correctSum / times / keyLen)

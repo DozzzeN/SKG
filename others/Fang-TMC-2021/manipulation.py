@@ -1,8 +1,18 @@
+import csv
 import math
+import sys
 import time
 
 import numpy as np
+from pyentrp import entropy as ent
+import scipy.signal
+from dtw import dtw
+from dtw import accelerated_dtw
+from matplotlib import pyplot as plt
+from scipy.fft import dct
 from scipy.io import loadmat
+from scipy.spatial import distance
+from scipy.stats import pearsonr, boxcox
 
 
 def smooth(x, window_len=11, window='hanning'):
@@ -39,11 +49,6 @@ def smooth(x, window_len=11, window='hanning'):
 
 
 rawData = loadmat("../../data/data_static_outdoor_1.mat")
-# data BMR BGR BGR-with-no-error
-# mi1 0.942335574   0.0 0.7816411682892906  0.7365682789883068
-# si1 0.6614918132  0.0 0.8203980099502488  0.5426865671641791
-# mo1 0.7867363161  0.0 0.6527798369162342  0.5135656041512231
-# so1 0.8757709251  0.0 0.8095216868006954  0.7089555565461597
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -51,9 +56,8 @@ CSIb1Orig = rawData['A'][:, 1]
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
-# block_size
-segLen = 7
-keyLen = 256 * segLen
+segLen = 5  # l=5, lb=6
+keyLen = 28 * segLen  # 保持密钥长度为168位
 
 lossySum = 0
 originSum = 0
@@ -75,7 +79,6 @@ randomWholeSum2 = 0
 noiseWholeSum1 = 0
 
 times = 0
-
 for staInd in range(0, int(dataLen), keyLen):
     CSIa1Orig = rawData['A'][:, 0][0: dataLen]
     CSIb1Orig = rawData['A'][:, 1][0: dataLen]
@@ -91,16 +94,13 @@ for staInd in range(0, int(dataLen), keyLen):
     # imitation attack
     CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=len(CSIa1Orig))
 
-    CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
-    CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
-    CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=30, window='flat')
-    CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=30, window='flat')
-
     tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
     tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
     tmpCSIe1 = CSIe1Orig[range(staInd, endInd, 1)]
     tmpCSIe2 = CSIe2Orig[range(staInd, endInd, 1)]
-    tmpCSIn1 = np.random.normal(loc=np.mean(tmpCSIa1), scale=np.std(tmpCSIa1, ddof=1), size=len(tmpCSIa1))
+
+    # inference attack
+    tmpCSIn1 = np.random.normal(np.mean(tmpCSIa1), np.std(tmpCSIa1), len(tmpCSIa1))
 
     # 最后各自的密钥
     o_list = []  # lossy quantization
@@ -117,79 +117,72 @@ for staInd in range(0, int(dataLen), keyLen):
     e2_list_number = []
     n1_list_number = []
 
-    tmpCSIa1Reshape = np.array(tmpCSIa1).reshape(int(keyLen / segLen), segLen)
-    tmpCSIb1Reshape = np.array(tmpCSIb1).reshape(int(keyLen / segLen), segLen)
-    tmpCSIe1Reshape = np.array(tmpCSIe1).reshape(int(keyLen / segLen), segLen)
-    tmpCSIe2Reshape = np.array(tmpCSIe2).reshape(int(keyLen / segLen), segLen)
-    tmpCSIn1Reshape = np.array(tmpCSIn1).reshape(int(keyLen / segLen), segLen)
+    tmpCSIn1Reshape = tmpCSIn1[:keyLen] * tmpCSIn1[:keyLen]
+    tmpCSIa1Reshape = tmpCSIa1[:keyLen] * tmpCSIn1[:keyLen]
+    tmpCSIb1Reshape = tmpCSIb1[:keyLen] * tmpCSIn1[:keyLen]
+    tmpCSIe1Reshape = tmpCSIe1[:keyLen] * tmpCSIn1[:keyLen]
+    tmpCSIe2Reshape = tmpCSIe2[:keyLen] * tmpCSIn1[:keyLen]
 
-    # parameters setting in section of comparison
-    alpha = 0.2
-    m = 2
+    tmpCSIa1Reshape = np.array(tmpCSIa1Reshape).reshape(int(keyLen / segLen), segLen)
+    tmpCSIb1Reshape = np.array(tmpCSIb1Reshape).reshape(int(keyLen / segLen), segLen)
+    tmpCSIe1Reshape = np.array(tmpCSIe1Reshape).reshape(int(keyLen / segLen), segLen)
+    tmpCSIe2Reshape = np.array(tmpCSIe2Reshape).reshape(int(keyLen / segLen), segLen)
+    tmpCSIn1Reshape = np.array(tmpCSIn1Reshape).reshape(int(keyLen / segLen), segLen)
+
+    min_q = sys.maxsize
+
     for i in range(int(keyLen / segLen)):
-        dropTmp = []
-        # rangeA1 = max(tmpCSIa1Reshape[i]) - min(tmpCSIa1Reshape[i])
-        # nA1 = int(math.log2(rangeA1))
-        # single bit quantization
-        q1A1 = np.mean(tmpCSIa1Reshape[i]) + alpha * np.std(tmpCSIa1Reshape[i])
-        q2A1 = np.mean(tmpCSIa1Reshape[i]) - alpha * np.std(tmpCSIa1Reshape[i])
-        q1B1 = np.mean(tmpCSIb1Reshape[i]) + alpha * np.std(tmpCSIb1Reshape[i])
-        q2B1 = np.mean(tmpCSIb1Reshape[i]) - alpha * np.std(tmpCSIb1Reshape[i])
-        q1N1 = np.mean(tmpCSIn1Reshape[i]) + alpha * np.std(tmpCSIn1Reshape[i])
-        q2N1 = np.mean(tmpCSIn1Reshape[i]) - alpha * np.std(tmpCSIn1Reshape[i])
-        q1E1 = np.mean(tmpCSIe1Reshape[i]) + alpha * np.std(tmpCSIe1Reshape[i])
-        q2E1 = np.mean(tmpCSIe1Reshape[i]) - alpha * np.std(tmpCSIe1Reshape[i])
-        q1E2 = np.mean(tmpCSIe2Reshape[i]) + alpha * np.std(tmpCSIe2Reshape[i])
-        q2E2 = np.mean(tmpCSIe2Reshape[i]) - alpha * np.std(tmpCSIe2Reshape[i])
-        for j in range(segLen):
-            if tmpCSIa1Reshape[i][j] < q1A1 and tmpCSIa1Reshape[i][j] > q2A1:
-                dropTmp.append(j)
-            if tmpCSIb1Reshape[i][j] < q1B1 and tmpCSIb1Reshape[i][j] > q2B1:
-                dropTmp.append(j)
+        for j in range(1, segLen):
+            min_q = min(min_q, abs(tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0]))
+            deltaA = 1 if tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0] > 0 else 0
+            a_list_number.append(deltaA)
+            deltaB = 1 if tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0] > 0 else 0
+            b_list_number.append(deltaB)
+            deltaE1 = 1 if tmpCSIe1Reshape[i][j] - tmpCSIe1Reshape[i][0] > 0 else 0
+            e1_list_number.append(deltaE1)
+            deltaE2 = 1 if tmpCSIe2Reshape[i][j] - tmpCSIe2Reshape[i][0] > 0 else 0
+            e2_list_number.append(deltaE2)
+            deltaN1 = 1 if tmpCSIn1Reshape[i][j] - tmpCSIn1Reshape[i][0] > 0 else 0
+            n1_list_number.append(deltaN1)
+        for j in range(int((segLen - 1) / 2)):
+            min_q = min(min_q, abs(abs(tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0]) - abs(
+                tmpCSIa1Reshape[i][j + 1] - tmpCSIa1Reshape[i][0])))
+            deltaA = 1 if abs(tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0]) - abs(
+                tmpCSIa1Reshape[i][j + 1] - tmpCSIa1Reshape[i][0]) > 0 else 0
+            a_list_number.append(deltaA)
+            deltaB = 1 if abs(tmpCSIb1Reshape[i][j] - tmpCSIb1Reshape[i][0]) - abs(
+                tmpCSIb1Reshape[i][j + 1] - tmpCSIb1Reshape[i][0]) > 0 else 0
+            b_list_number.append(deltaB)
+            deltaE1 = 1 if abs(tmpCSIe1Reshape[i][j] - tmpCSIe1Reshape[i][0]) - abs(
+                tmpCSIe1Reshape[i][j + 1] - tmpCSIe1Reshape[i][0]) > 0 else 0
+            e1_list_number.append(deltaE1)
+            deltaE2 = 1 if abs(tmpCSIe2Reshape[i][j] - tmpCSIe2Reshape[i][0]) - abs(
+                tmpCSIe2Reshape[i][j + 1] - tmpCSIe2Reshape[i][0]) > 0 else 0
+            e2_list_number.append(deltaE2)
+            deltaN1 = 1 if abs(tmpCSIn1Reshape[i][j] - tmpCSIn1Reshape[i][0]) - abs(
+                tmpCSIn1Reshape[i][j + 1] - tmpCSIn1Reshape[i][0]) > 0 else 0
+            n1_list_number.append(deltaN1)
 
-        for j in range(segLen):
-            o_list_number.append(1)
-            if j in dropTmp:
-                continue
-            if tmpCSIa1Reshape[i][j] > q1A1:
-                a_list_number.append(1)
-            if tmpCSIa1Reshape[i][j] < q2A1:
-                a_list_number.append(0)
-            if tmpCSIb1Reshape[i][j] > q1B1:
-                b_list_number.append(1)
-            if tmpCSIb1Reshape[i][j] < q2B1:
-                b_list_number.append(0)
-            if tmpCSIe1Reshape[i][j] > q1E1:
-                e1_list_number.append(1)
-            if tmpCSIe1Reshape[i][j] < q2E1:
-                e1_list_number.append(0)
-            if tmpCSIe2Reshape[i][j] > q1E2:
-                e2_list_number.append(1)
-            if tmpCSIe2Reshape[i][j] < q2E2:
-                e2_list_number.append(0)
-            if tmpCSIn1Reshape[i][j] > q1N1:
-                n1_list_number.append(1)
-            if tmpCSIn1Reshape[i][j] < q2N1:
-                n1_list_number.append(0)
+    print("min_q", min_q)
 
     # 转成二进制，0填充成00
     for i in range(len(o_list_number)):
-        number = bin(o_list_number[i])[2:].zfill(int(np.log2(m)))
+        number = bin(o_list_number[i])[2:].zfill(1)
         o_list += number
     for i in range(len(a_list_number)):
-        number = bin(a_list_number[i])[2:].zfill(int(np.log2(m)))
+        number = bin(a_list_number[i])[2:].zfill(1)
         a_list += number
     for i in range(len(b_list_number)):
-        number = bin(b_list_number[i])[2:].zfill(int(np.log2(m)))
+        number = bin(b_list_number[i])[2:].zfill(1)
         b_list += number
     for i in range(len(e1_list_number)):
-        number = bin(e1_list_number[i])[2:].zfill(int(np.log2(m)))
+        number = bin(e1_list_number[i])[2:].zfill(1)
         e1_list += number
     for i in range(len(e2_list_number)):
-        number = bin(e2_list_number[i])[2:].zfill(int(np.log2(m)))
+        number = bin(e2_list_number[i])[2:].zfill(1)
         e2_list += number
     for i in range(len(n1_list_number)):
-        number = bin(n1_list_number[i])[2:].zfill(int(np.log2(m)))
+        number = bin(n1_list_number[i])[2:].zfill(1)
         n1_list += number
 
     # 对齐密钥，随机补全
@@ -211,6 +204,8 @@ for staInd in range(0, int(dataLen), keyLen):
     # print("keys of n1:", len(n1_list), n1_list)
     print("keys of n1:", len(n1_list_number), n1_list_number)
 
+    print(ent.multiscale_entropy(a_list_number / np.max(a_list_number), 3, maxscale=1))
+
     lossySum += len(o_list)
 
     sum1 = min(len(a_list), len(b_list))
@@ -227,10 +222,10 @@ for staInd in range(0, int(dataLen), keyLen):
     for i in range(min(len(a_list), len(n1_list))):
         sum41 += (a_list[i] == n1_list[i])
 
-    print("\033[0;32;40ma-b", sum2, 0 if sum1 == 0 else sum2 / sum1, "\033[0m")
-    print("a-e1", sum31, 0 if sum1 == 0 else sum31 / sum1)
-    print("a-e2", sum32, 0 if sum1 == 0 else sum32 / sum1)
-    print("a-n1", sum41, 0 if sum1 == 0 else sum41 / sum1)
+    print("\033[0;32;40ma-b", sum2, sum2 / sum1, "\033[0m")
+    print("a-e1", sum31, sum31 / sum1)
+    print("a-e2", sum32, sum32 / sum1)
+    print("a-n1", sum41, sum41 / sum1)
     originSum += sum1
     correctSum += sum2
     randomSum1 += sum31
@@ -292,5 +287,4 @@ print("all bits", lossySum)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
 
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
-      correctSum / len(CSIa1Orig))
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig), correctSum / len(CSIa1Orig))

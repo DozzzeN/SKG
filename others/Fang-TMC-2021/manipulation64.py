@@ -272,7 +272,6 @@ for staInd in range(0, int(dataLen), keyLen):
     randomWholeSum2 = randomWholeSum2 + 1 if sum32 == sum1 else randomWholeSum2
     noiseWholeSum1 = noiseWholeSum1 + 1 if sum41 == sum1 else noiseWholeSum1
 
-
 print("\033[0;32;40ma-b bit agreement rate", correctSum, "/", originSum, "=", round(correctSum / originSum, 10),
       "\033[0m")
 print("a-e1 bit agreement rate", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))

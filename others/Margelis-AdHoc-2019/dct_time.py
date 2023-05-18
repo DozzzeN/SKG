@@ -4,6 +4,7 @@ import numpy as np
 from scipy.fft import dct
 from scipy.io import loadmat
 
+
 def smooth(x, window_len=11, window='hanning'):
     # ndim返回数组的维度
     if x.ndim != 1:

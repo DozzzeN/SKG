@@ -4,6 +4,7 @@ import numpy as np
 from scipy.fft import dct
 from scipy.io import loadmat
 
+
 def smooth(x, window_len=11, window='hanning'):
     # ndim返回数组的维度
     if x.ndim != 1:
@@ -323,4 +324,5 @@ print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum,
       originSum / times / keyLen,
       correctSum / times / keyLen)
 
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig), correctSum / len(CSIa1Orig))
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
+      correctSum / len(CSIa1Orig))

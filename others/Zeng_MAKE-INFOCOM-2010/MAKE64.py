@@ -57,7 +57,7 @@ def quantizer(number, q):
     return -1
 
 
-rawData = loadmat("../../data/data_mobile_indoor_1.mat")
+rawData = loadmat("../../data/data_mobile_indoor_2.mat")
 # so1 0.7581350729 1.1616814514331566 0.8807114518789284
 # si1 0.6901652145 1.121412935323383 0.7739601990049751
 # mo2 0.7542655786 1.161318113288822 0.875942278699117

@@ -48,17 +48,6 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-# 若m=10, alpha=0.5, n=100
-# 将[0,100]分为[0,5],[10,15],[20,25],...,[90,95]
-# q=0,10,20,...,100
-# g=5,5,5,...,5
-def quantizer(number, q):
-    for i in range(0, len(q) - 1, 2):
-        if number > q[i] and number < q[i + 1]:
-            return int((i + 1) / 2)
-    return -1
-
-
 rawData = loadmat("../../data/data_static_outdoor_1.mat")
 
 CSIa1Orig = rawData['A'][:, 0]
@@ -356,4 +345,5 @@ print("all bits", lossySum)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
 
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig), correctSum / len(CSIa1Orig))
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
+      correctSum / len(CSIa1Orig))

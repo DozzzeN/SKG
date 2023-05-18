@@ -1,16 +1,8 @@
-import csv
-import math
 import time
 
 import numpy as np
-import scipy.signal
-from dtw import dtw
-from dtw import accelerated_dtw
-from matplotlib import pyplot as plt
 from scipy.fft import dct
 from scipy.io import loadmat
-from scipy.spatial import distance
-from scipy.stats import pearsonr, boxcox
 
 
 def smooth(x, window_len=11, window='hanning'):
@@ -46,20 +38,7 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-def filtering(data, step, window):
-    res = []
-    m = int((len(data) - window) / step) + 1
-    for i in range(1, m):
-        res.append(sum(data[1 + (i - 1) * step:window + (i - 1) * step]) / window)
-    return res
-
-
-rawData = loadmat("../../data/data_static_outdoor_1.mat")
-# data BMR BGR BGR-with-no-error
-# mi1 0.96          0.16            0.15968680780920003 0.15329933549683203
-# si1 0.8186874305  0.0229885057    0.16101492537313433 0.13182089552238807
-# mo1 0.89943074    0.0             0.15626389918458117 0.14054855448480355
-# so1 0.9502224694  0.0344827586    0.16029955868586457 0.15232024249988857
+rawData = loadmat("../../data/data_mobile_outdoor_1.mat")
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -67,11 +46,7 @@ CSIb1Orig = rawData['A'][:, 1]
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
-segLen = 6
-keyLen = 64 * segLen
-
-step = 4
-window = 8
+keyLen = 256
 
 originSum = 0
 correctSum = 0
@@ -93,25 +68,25 @@ noiseWholeSum1 = 0
 
 times = 0
 
-for staInd in range(0, int(dataLen), keyLen):
-    CSIa1Orig = rawData['A'][:, 0][0: dataLen]
-    CSIb1Orig = rawData['A'][:, 1][0: dataLen]
-
+for staInd in range(0, dataLen, keyLen):
     endInd = staInd + keyLen
     print("range:", staInd, endInd)
     if endInd >= len(CSIa1Orig):
         break
     times += 1
 
+    origInd = np.array([xx for xx in range(staInd, endInd, 1)])
+
+    CSIa1Epi = CSIa1Orig[origInd]
+    CSIb1Epi = CSIb1Orig[origInd]
+
+    CSIa1Orig[origInd] = CSIa1Epi
+    CSIb1Orig[origInd] = CSIb1Epi
+
     np.random.seed(0)
 
     # imitation attack
     CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=len(CSIa1Orig))
-
-    CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
-    CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
-    CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=30, window='flat')
-    CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=30, window='flat')
 
     tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
     tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
@@ -120,8 +95,36 @@ for staInd in range(0, int(dataLen), keyLen):
 
     # inference attack
     tmpCSIn1 = np.random.random(keyLen)
+    # tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
+    # tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
+    # tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
+    # tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
+    # tmpCSIn1 = tmpCSIn1 - np.mean(tmpCSIn1)
 
-    # 最后各自的密钥
+    dctCSIa1 = dct(tmpCSIa1, n=int(len(tmpCSIa1) / 2))
+    dctCSIb1 = dct(tmpCSIb1, n=int(len(tmpCSIb1) / 2))
+    dctCSIe1 = dct(tmpCSIe1, n=int(len(tmpCSIe1) / 2))
+    dctCSIe2 = dct(tmpCSIe2, n=int(len(tmpCSIe2) / 2))
+    dctCSIn1 = dct(tmpCSIn1, n=int(len(tmpCSIn1) / 2))
+
+    # dctCSIa1 = dct(tmpCSIa1)
+    # dctCSIb1 = dct(tmpCSIb1)
+    # dctCSIe1 = dct(tmpCSIe1)
+    # dctCSIe2 = dct(tmpCSIe2)
+    # dctCSIn1 = dct(tmpCSIn1)
+
+    mean_a = np.mean(dctCSIa1)
+    mean_b = np.mean(dctCSIb1)
+    mean_e1 = np.mean(dctCSIe1)
+    mean_e2 = np.mean(dctCSIe2)
+    mean_n1 = np.mean(dctCSIn1)
+
+    std_a = np.std(dctCSIa1)
+    std_b = np.std(dctCSIb1)
+    std_e1 = np.std(dctCSIe1)
+    std_e2 = np.std(dctCSIe2)
+    std_n1 = np.std(dctCSIn1)
+
     a_list = []
     b_list = []
     e1_list = []
@@ -134,78 +137,71 @@ for staInd in range(0, int(dataLen), keyLen):
     e2_list_number = []
     n1_list_number = []
 
-    # moving average filtering
-    tmpCSIa1 = filtering(tmpCSIa1, step, window)
-    tmpCSIb1 = filtering(tmpCSIb1, step, window)
-    tmpCSIe1 = filtering(tmpCSIe1, step, window)
-    tmpCSIe2 = filtering(tmpCSIe2, step, window)
-    tmpCSIn1 = filtering(tmpCSIn1, step, window)
-
-    # bidirectional difference quantization
-    # 没有间隔的量化错误的更多
-    for i in range(0, int(len(tmpCSIa1) / 3) * 3, 3):
-        if i + 2 >= len(tmpCSIa1):
-            break
-        if tmpCSIa1[i + 1] - tmpCSIa1[i] >= 0:
+    for i in range(len(dctCSIe1)):
+        if dctCSIa1[i] > mean_a + std_a:
+            a_list_number.append(3)
+        elif dctCSIa1[i] < mean_a + std_a and dctCSIa1[i] > mean_a:
+            a_list_number.append(2)
+        elif dctCSIa1[i] < mean_a and dctCSIa1[i] > mean_a - std_a:
             a_list_number.append(1)
-        else:
-            a_list_number.append(0)
-        if tmpCSIa1[i + 1] - tmpCSIa1[i + 2] >= 0:
-            a_list_number.append(1)
-        else:
+        elif dctCSIa1[i] < mean_a - std_a:
             a_list_number.append(0)
 
-        if tmpCSIb1[i + 1] - tmpCSIb1[i] >= 0:
+    for i in range(len(dctCSIb1)):
+        if dctCSIb1[i] > mean_b + std_b:
+            b_list_number.append(3)
+        elif dctCSIb1[i] < mean_b + std_b and dctCSIb1[i] > mean_b:
+            b_list_number.append(2)
+        elif dctCSIb1[i] < mean_b and dctCSIb1[i] > mean_b - std_b:
             b_list_number.append(1)
-        else:
-            b_list_number.append(0)
-        if tmpCSIb1[i + 1] - tmpCSIb1[i + 2] >= 0:
-            b_list_number.append(1)
-        else:
+        elif dctCSIb1[i] < mean_b - std_b:
             b_list_number.append(0)
 
-        if tmpCSIe1[i + 1] - tmpCSIe1[i] >= 0:
+    for i in range(len(dctCSIe1)):
+        if dctCSIe1[i] > mean_e1 + std_e1:
+            e1_list_number.append(3)
+        elif dctCSIe1[i] < mean_e1 + std_e1 and dctCSIe1[i] > mean_e1:
+            e1_list_number.append(2)
+        elif dctCSIe1[i] < mean_e1 and dctCSIe1[i] > mean_e1 - std_e1:
             e1_list_number.append(1)
-        else:
-            e1_list_number.append(0)
-        if tmpCSIe1[i + 1] - tmpCSIe1[i + 2] >= 0:
-            e1_list_number.append(1)
-        else:
+        elif dctCSIe1[i] < mean_e1 - std_e1:
             e1_list_number.append(0)
 
-        if tmpCSIe2[i + 1] - tmpCSIe2[i] >= 0:
+    for i in range(len(dctCSIe2)):
+        if dctCSIe2[i] > mean_e2 + std_e2:
+            e2_list_number.append(3)
+        elif dctCSIe2[i] < mean_e2 + std_e2 and dctCSIe2[i] > mean_e2:
+            e2_list_number.append(2)
+        elif dctCSIe2[i] < mean_e2 and dctCSIe2[i] > mean_e2 - std_e2:
             e2_list_number.append(1)
-        else:
-            e2_list_number.append(0)
-        if tmpCSIe2[i + 1] - tmpCSIe2[i + 2] >= 0:
-            e2_list_number.append(1)
-        else:
+        elif dctCSIe2[i] < mean_e2 - std_e2:
             e2_list_number.append(0)
 
-        if tmpCSIn1[i + 1] - tmpCSIn1[i] >= 0:
+    for i in range(len(dctCSIn1)):
+        if dctCSIn1[i] > mean_n1 + std_n1:
+            n1_list_number.append(3)
+        elif dctCSIn1[i] < mean_n1 + std_n1 and dctCSIn1[i] >= mean_n1:
+            n1_list_number.append(2)
+        elif dctCSIn1[i] < mean_n1 and dctCSIn1[i] > mean_n1 - std_n1:
             n1_list_number.append(1)
-        else:
-            n1_list_number.append(0)
-        if tmpCSIn1[i + 1] - tmpCSIn1[i + 2] >= 0:
-            n1_list_number.append(1)
-        else:
+        elif dctCSIn1[i] < mean_n1 - std_n1:
             n1_list_number.append(0)
 
     # 转成二进制，0填充成00
     for i in range(len(a_list_number)):
-        number = bin(a_list_number[i])[2:].zfill(1)
+        number = bin(a_list_number[i])[2:].zfill(2)
         a_list += number
     for i in range(len(b_list_number)):
-        number = bin(b_list_number[i])[2:].zfill(1)
+        number = bin(b_list_number[i])[2:].zfill(2)
         b_list += number
     for i in range(len(e1_list_number)):
-        number = bin(e1_list_number[i])[2:].zfill(1)
+        number = bin(e1_list_number[i])[2:].zfill(2)
         e1_list += number
     for i in range(len(e2_list_number)):
-        number = bin(e2_list_number[i])[2:].zfill(1)
+        number = bin(e2_list_number[i])[2:].zfill(2)
         e2_list += number
     for i in range(len(n1_list_number)):
-        number = bin(n1_list_number[i])[2:].zfill(1)
+        number = bin(n1_list_number[i])[2:].zfill(2)
         n1_list += number
 
     # 对齐密钥，随机补全
@@ -251,34 +247,34 @@ for staInd in range(0, int(dataLen), keyLen):
     randomSum2 += sum32
     noiseSum1 += sum41
 
-    decSum1 = min(len(a_list_number), len(b_list_number))
-    decSum2 = 0
-    decSum31 = 0
-    decSum32 = 0
-    decSum41 = 0
-    for i in range(0, decSum1):
-        decSum2 += (a_list_number[i] == b_list_number[i])
-    for i in range(min(len(a_list_number), len(e1_list_number))):
-        decSum31 += (a_list_number[i] == e1_list_number[i])
-    for i in range(min(len(a_list_number), len(e2_list_number))):
-        decSum32 += (a_list_number[i] == e2_list_number[i])
-    for i in range(min(len(a_list_number), len(n1_list_number))):
-        decSum41 += (a_list_number[i] == n1_list_number[i])
-    if decSum1 == 0:
-        continue
-    if decSum2 == decSum1:
-        print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
-    else:
-        print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
-    print("a-e1", decSum31, decSum31 / decSum1)
-    print("a-e2", decSum32, decSum32 / decSum1)
-    print("a-n1", decSum41, decSum41 / decSum1)
-    print("----------------------")
-    originDecSum += decSum1
-    correctDecSum += decSum2
-    randomDecSum1 += decSum31
-    randomDecSum2 += decSum32
-    noiseDecSum1 += decSum41
+    # decSum1 = min(len(a_list_number), len(b_list_number))
+    # decSum2 = 0
+    # decSum31 = 0
+    # decSum32 = 0
+    # decSum41 = 0
+    # for i in range(0, decSum1):
+    #     decSum2 += (a_list_number[i] == b_list_number[i])
+    # for i in range(min(len(a_list_number), len(e1_list_number))):
+    #     decSum31 += (a_list_number[i] == e1_list_number[i])
+    # for i in range(min(len(a_list_number), len(e2_list_number))):
+    #     decSum32 += (a_list_number[i] == e2_list_number[i])
+    # for i in range(min(len(a_list_number), len(n1_list_number))):
+    #     decSum41 += (a_list_number[i] == n1_list_number[i])
+    # if decSum1 == 0:
+    #     continue
+    # if decSum2 == decSum1:
+    #     print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
+    # else:
+    #     print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
+    # print("a-e1", decSum31, decSum31 / decSum1)
+    # print("a-e2", decSum32, decSum32 / decSum1)
+    # print("a-n1", decSum41, decSum41 / decSum1)
+    # print("----------------------")
+    # originDecSum += decSum1
+    # correctDecSum += decSum2
+    # randomDecSum1 += decSum31
+    # randomDecSum2 += decSum32
+    # noiseDecSum1 += decSum41
 
     originWholeSum += 1
     correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
@@ -291,11 +287,11 @@ print("\033[0;32;40ma-b bit agreement rate", correctSum, "/", originSum, "=", ro
 print("a-e1 bit agreement rate", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))
 print("a-e2 bit agreement rate", randomSum2, "/", originSum, "=", round(randomSum2 / originSum, 10))
 print("a-n1 bit agreement rate", noiseSum1, "/", originSum, "=", round(noiseSum1 / originSum, 10))
-print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
-      round(correctDecSum / originDecSum, 10), "\033[0m")
-print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
-print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
-print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
+# print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
+#       round(correctDecSum / originDecSum, 10), "\033[0m")
+# print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
+# print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
+# print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
 print("\033[0;32;40ma-b key agreement rate", correctWholeSum, "/", originWholeSum, "=",
       round(correctWholeSum / originWholeSum, 10), "\033[0m")
 print("a-e1 key agreement rate", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))
@@ -305,4 +301,5 @@ print("times", times)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
 
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig), correctSum / len(CSIa1Orig))
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
+      correctSum / len(CSIa1Orig))
