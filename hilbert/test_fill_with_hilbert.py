@@ -33,58 +33,13 @@ def findMaxInterval(list):
     return max_interval
 
 
-def findMinX(list):
-    l = len(list)
-    min_X = sys.maxsize
-    for i in range(l):
-        min_X = min(min_X, list[i][0])
-    return min_X
-
-
-def findMinY(list):
-    l = len(list)
-    min_Y = sys.maxsize
-    for i in range(l):
-        min_Y = min(min_Y, list[i][1])
-    return min_Y
-
-
-def findMaxX(list):
-    l = len(list)
-    max_X = 0
-    for i in range(l):
-        max_X = max(max_X, list[i][0])
-    return max_X
-
-
-def findMaxY(list):
-    l = len(list)
-    max_Y = 0
-    for i in range(l):
-        max_Y = max(max_Y, list[i][1])
-    return max_Y
-
-
 def listToHilbertCurveIndex(list):
     grid_size = findMinInterval(list) / 2 * math.sqrt(2)
 
-    minX = findMinX(list)
-    minY = findMinY(list)
-    maxX = findMaxX(list)
-    maxY = findMaxY(list)
-    for i in range(len(list)):
-        list[i][0] -= minX
-        list[i][1] -= minY
-
-    column_number = (maxX - minX) / grid_size
-    row_number = (maxY - minY) / grid_size
-
-    points = []
-
-    for i in range(len(list)):
-        indexX = int(list[i][0] / grid_size)
-        indexY = int(list[i][1] / grid_size)
-        points.append([indexX, indexY])
+    list = np.array(list) - np.min(list, axis=0)
+    column_number = (np.max(list, axis=0)[0] - np.min(list, axis=0)[0]) / grid_size
+    row_number = (np.max(list, axis=0)[1] - np.min(list, axis=0)[1]) / grid_size
+    points = np.array(list / grid_size).astype(int)
 
     total_grids = (int(column_number) + 1) * (int(row_number) + 1)
     p = int(math.log10(total_grids) / math.log10(2))
@@ -111,28 +66,19 @@ def genCoordinate(list):
         coord = []
         tmp1 = 0
         tmp2 = 0
-        for j in range(int(len(list[i])/2)):
+        for j in range(int(len(list[i]) / 2)):
             tmp1 += list[i][j]
-        for j in range(int(len(list[i])/2), len(list[i])):
+        for j in range(int(len(list[i]) / 2), len(list[i])):
             tmp2 += list[i][j]
         coord.append(tmp1)
         coord.append(tmp2)
         res.append(coord)
     return res
 
+
 def listToHilbertCurveIndexWithFixedParams(list, p, grid_size):
-    minX = findMinX(list)
-    minY = findMinY(list)
-    for i in range(len(list)):
-        list[i][0] -= minX
-        list[i][1] -= minY
-
-    points = []
-
-    for i in range(len(list)):
-        indexX = int(list[i][0] / grid_size)
-        indexY = int(list[i][1] / grid_size)
-        points.append([indexX, indexY])
+    list = np.array(list) - np.min(list, axis=0)
+    points = np.array(list / grid_size).astype(int)
 
     n = 2
     hilbert_curve = HilbertCurve(p, n)
@@ -189,6 +135,7 @@ def projection(l1, l2, p):
     k = v1v2 / (math.pow(l2[0] - l1[0], 2) + math.pow(l2[1] - l1[1], 2))
     p0 = [l1[0] + k * (l2[0] - l1[0]), l1[1] + k * (l2[1] - l1[1])]
     return p0
+
 
 def splitEntropyPerm(CSIa1Orig, CSIb1Orig, CSIe1Orig, segLen, dataLen):
     print("SE total_se", ent.multiscale_entropy(CSIa1Orig, 3, maxscale=1))
@@ -253,34 +200,12 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, CSIe1Orig, segLen, dataLen):
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig), np.array(_CSIe1Orig)
 
 
-l1 = [1, 0]
-l2 = [0, 1]
-fileName = "../data/data_static_indoor_1.mat"
+fileName = "../data/data_mobile_indoor_1.mat"
 rawData = loadmat(fileName)
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 
-dataLen = len(CSIa1Orig)  # 6745
-
-# rawData = loadmat('../data/data_static_indoor_1.mat')
-#
-# CSIa1Orig = rawData['A'][:, 0]
-# CSIb1Orig = rawData['A'][:, 1]
-#
-# CSIa1Orig = CSIa1Orig[25000:30000]
-# CSIb1Orig = CSIb1Orig[25000:30000]
-
-# CSIa1OrigRaw = rawData['A'][:, 0]
-# CSIb1OrigRaw = rawData['A'][:, 1]
-#
-# CSIa1Orig = []
-# CSIb1Orig = []
-# for i in range(2000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i])
-#     CSIb1Orig.append(CSIb1OrigRaw[i])
-# for i in range(5000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i + 20000])
-#     CSIb1Orig.append(CSIb1OrigRaw[i + 20000])
+dataLen = len(CSIa1Orig)
 
 CSIa1Orig = np.array(CSIa1Orig)
 CSIb1Orig = np.array(CSIb1Orig)
@@ -322,206 +247,209 @@ noiseWholeSum = 0
 codings = ""
 times = 0
 
-grid_size = 10
-hilbert_p = 20
-for grid_size in range(7, 20):
-    for hilbert_p in range(7, 20):
-        for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
-            processTime = time.time()
+grid_size = 0.1
+hilbert_p = 10
+for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
+    processTime = time.time()
 
-            endInd = staInd + keyLen * intvl
-            # print("range:", staInd, endInd)
-            if endInd >= len(CSIa1Orig):
-                break
-            times += 1
+    endInd = staInd + keyLen * intvl
+    # print("range:", staInd, endInd)
+    if endInd >= len(CSIa1Orig):
+        break
+    times += 1
 
-            CSIa1Orig = CSIa1OrigBack.copy()
-            CSIb1Orig = CSIb1OrigBack.copy()
-            CSIe1Orig = CSIe1OrigBack.copy()
-            CSIn1Orig = CSIn1OrigBack.copy()
+    CSIa1Orig = CSIa1OrigBack.copy()
+    CSIb1Orig = CSIb1OrigBack.copy()
+    CSIe1Orig = CSIe1OrigBack.copy()
+    CSIn1Orig = CSIn1OrigBack.copy()
 
-            tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
-            tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
-            tmpCSIe1 = CSIe1Orig[range(staInd, endInd, 1)]
-            tmpNoise = CSIn1Orig[range(staInd, endInd, 1)]
+    tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
+    tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
+    tmpCSIe1 = CSIe1Orig[range(staInd, endInd, 1)]
+    tmpNoise = CSIn1Orig[range(staInd, endInd, 1)]
 
-            tmpCSIa1 = tmpCSIa1 - (np.mean(tmpCSIa1) - np.mean(tmpCSIb1))  # Mean value consistency
+    tmpCSIa1 = tmpCSIa1 - (np.mean(tmpCSIa1) - np.mean(tmpCSIb1))  # Mean value consistency
 
-            # linspace函数生成元素为50的等间隔数列，可以指定第三个参数为元素个数
-            # signal.square返回周期性的方波波形
-            tmpPulse = signal.square(
-                2 * np.pi * 1 / intvl * np.linspace(0, np.pi * 0.5 * keyLen, keyLen * intvl))  ## Rectangular pulse
+    # linspace函数生成元素为50的等间隔数列，可以指定第三个参数为元素个数
+    # signal.square返回周期性的方波波形
+    tmpPulse = signal.square(
+        2 * np.pi * 1 / intvl * np.linspace(0, np.pi * 0.5 * keyLen, keyLen * intvl))  ## Rectangular pulse
 
-            if addNoise:
-                # tmpCSIa1 = tmpPulse * (np.float_power(np.abs(tmpCSIa1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIa1))
-                # tmpCSIb1 = tmpPulse * (np.float_power(np.abs(tmpCSIb1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIb1))
-                # tmpCSIe1 = tmpPulse * (np.float_power(np.abs(tmpCSIe1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIe1))
-                tmpCSIa1 = tmpPulse * np.float_power(np.abs(tmpCSIa1), tmpNoise)
-                tmpCSIb1 = tmpPulse * np.float_power(np.abs(tmpCSIb1), tmpNoise)
-                tmpCSIe1 = tmpPulse * np.float_power(np.abs(tmpCSIe1), tmpNoise)
-            else:
-                tmpCSIa1 = tmpPulse * tmpCSIa1
-                tmpCSIb1 = tmpPulse * tmpCSIb1
-                tmpCSIe1 = tmpPulse * tmpCSIe1
+    if addNoise:
+        # tmpCSIa1 = tmpPulse * (np.float_power(np.abs(tmpCSIa1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIa1))
+        # tmpCSIb1 = tmpPulse * (np.float_power(np.abs(tmpCSIb1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIb1))
+        # tmpCSIe1 = tmpPulse * (np.float_power(np.abs(tmpCSIe1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIe1))
+        tmpCSIa1 = tmpPulse * np.float_power(np.abs(tmpCSIa1), tmpNoise)
+        tmpCSIb1 = tmpPulse * np.float_power(np.abs(tmpCSIb1), tmpNoise)
+        tmpCSIe1 = tmpPulse * np.float_power(np.abs(tmpCSIe1), tmpNoise)
+    else:
+        tmpCSIa1 = tmpPulse * tmpCSIa1
+        tmpCSIb1 = tmpPulse * tmpCSIb1
+        tmpCSIe1 = tmpPulse * tmpCSIe1
 
-            CSIa1Orig[range(staInd, endInd, 1)] = tmpCSIa1
-            CSIb1Orig[range(staInd, endInd, 1)] = tmpCSIb1
-            CSIe1Orig[range(staInd, endInd, 1)] = tmpCSIe1
+    CSIa1Orig[range(staInd, endInd, 1)] = tmpCSIa1
+    CSIb1Orig[range(staInd, endInd, 1)] = tmpCSIb1
+    CSIe1Orig[range(staInd, endInd, 1)] = tmpCSIe1
 
-            permLen = len(range(staInd, endInd, intvl))
-            origInd = np.array([xx for xx in range(staInd, endInd, intvl)])
+    permLen = len(range(staInd, endInd, intvl))
+    origInd = np.array([xx for xx in range(staInd, endInd, intvl)])
 
-            sortCSIa1 = np.zeros(permLen)
-            sortCSIb1 = np.zeros(permLen)
-            sortCSIe1 = np.zeros(permLen)
-            sortNoise = np.zeros(permLen)
+    sortCSIa1 = np.zeros(permLen)
+    sortCSIb1 = np.zeros(permLen)
+    sortCSIe1 = np.zeros(permLen)
+    sortNoise = np.zeros(permLen)
 
-            for ii in range(permLen):
-                aIndVec = np.array([aa for aa in range(origInd[ii], origInd[ii] + intvl, 1)])  ## for non-permuted CSIa1
+    for ii in range(permLen):
+        aIndVec = np.array([aa for aa in range(origInd[ii], origInd[ii] + intvl, 1)])  ## for non-permuted CSIa1
 
-                for jj in range(permLen, permLen * 2):
-                    bIndVec = np.array([bb for bb in range(origInd[jj - permLen], origInd[jj - permLen] + intvl, 1)])
+        for jj in range(permLen, permLen * 2):
+            bIndVec = np.array([bb for bb in range(origInd[jj - permLen], origInd[jj - permLen] + intvl, 1)])
 
-                    CSIa1Tmp = CSIa1Orig[aIndVec]
-                    CSIb1Tmp = CSIb1Orig[bIndVec]
-                    CSIe1Tmp = CSIe1Orig[bIndVec]
-                    CSIn1Tmp = CSIn1Orig[aIndVec]
+            CSIa1Tmp = CSIa1Orig[aIndVec]
+            CSIb1Tmp = CSIb1Orig[bIndVec]
+            CSIe1Tmp = CSIe1Orig[bIndVec]
+            CSIn1Tmp = CSIn1Orig[aIndVec]
 
-                    sortCSIa1[ii] = np.mean(CSIa1Tmp)  ## Metric 1: Mean
-                    sortCSIb1[jj - permLen] = np.mean(CSIb1Tmp)  # 只赋值一次
-                    sortCSIe1[jj - permLen] = np.mean(CSIe1Tmp)
-                    sortNoise[ii - permLen] = np.mean(CSIn1Tmp)
+            sortCSIa1[ii] = np.mean(CSIa1Tmp)  ## Metric 1: Mean
+            sortCSIb1[jj - permLen] = np.mean(CSIb1Tmp)  # 只赋值一次
+            sortCSIe1[jj - permLen] = np.mean(CSIe1Tmp)
+            sortNoise[ii - permLen] = np.mean(CSIn1Tmp)
 
-            # sortCSIa1是原始算法中排序前的数据
-            sortCSIa1 = np.log10(np.abs(sortCSIa1) + 0.1)
-            sortCSIb1 = np.log10(np.abs(sortCSIb1) + 0.1)
-            sortCSIe1 = np.log10(np.abs(sortCSIe1) + 0.1)
-            sortNoise = np.log10(np.abs(sortNoise) + 0.1)
+    # sortCSIa1是原始算法中排序前的数据
+    sortCSIa1 = np.log10(np.abs(sortCSIa1) + 0.1)
+    sortCSIb1 = np.log10(np.abs(sortCSIb1) + 0.1)
+    sortCSIe1 = np.log10(np.abs(sortCSIe1) + 0.1)
+    sortNoise = np.log10(np.abs(sortNoise) + 0.1)
 
-            # 取原数据的一部分来reshape
-            sortCSIa1Reshape = sortCSIa1[0:segLen * int(len(sortCSIa1) / segLen)]
-            sortCSIb1Reshape = sortCSIb1[0:segLen * int(len(sortCSIb1) / segLen)]
-            sortCSIe1Reshape = sortCSIe1[0:segLen * int(len(sortCSIe1) / segLen)]
-            sortNoiseReshape = sortNoise[0:segLen * int(len(sortNoise) / segLen)]
+    # 取原数据的一部分来reshape
+    sortCSIa1Reshape = sortCSIa1[0:segLen * int(len(sortCSIa1) / segLen)]
+    sortCSIb1Reshape = sortCSIb1[0:segLen * int(len(sortCSIb1) / segLen)]
+    sortCSIe1Reshape = sortCSIe1[0:segLen * int(len(sortCSIe1) / segLen)]
+    sortNoiseReshape = sortNoise[0:segLen * int(len(sortNoise) / segLen)]
 
-            sortCSIa1Reshape = sortCSIa1Reshape.reshape(int(len(sortCSIa1Reshape) / segLen), segLen)
-            sortCSIb1Reshape = sortCSIb1Reshape.reshape(int(len(sortCSIb1Reshape) / segLen), segLen)
-            sortCSIe1Reshape = sortCSIe1Reshape.reshape(int(len(sortCSIe1Reshape) / segLen), segLen)
-            sortNoiseReshape = sortNoiseReshape.reshape(int(len(sortNoiseReshape) / segLen), segLen)
+    sortCSIa1Reshape = sortCSIa1Reshape.reshape(int(len(sortCSIa1Reshape) / segLen), segLen)
+    sortCSIb1Reshape = sortCSIb1Reshape.reshape(int(len(sortCSIb1Reshape) / segLen), segLen)
+    sortCSIe1Reshape = sortCSIe1Reshape.reshape(int(len(sortCSIe1Reshape) / segLen), segLen)
+    sortNoiseReshape = sortNoiseReshape.reshape(int(len(sortNoiseReshape) / segLen), segLen)
 
-            sortCSIa1 = []
-            sortCSIb1 = []
-            sortCSIe1 = []
-            sortNoise = []
+    # sortCSIa1 = []
+    # sortCSIb1 = []
+    # sortCSIe1 = []
+    # sortNoise = []
 
-            # 归一化
-            # for i in range(len(sortCSIa1Reshape)):
-            #     # sklearn的归一化是按列转换，因此需要先转为列向量
-            #     sortCSIa1.append(preprocessing.MinMaxScaler().fit_transform(
-            #         np.array(sortCSIa1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
-            #     sortCSIb1.append(preprocessing.MinMaxScaler().fit_transform(
-            #         np.array(sortCSIb1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
-            #     sortCSIe1.append(preprocessing.MinMaxScaler().fit_transform(
-            #         np.array(sortCSIe1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
-            #     sortNoise.append(preprocessing.MinMaxScaler().fit_transform(
-            #         np.array(sortNoiseReshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
+    # 归一化
+    # for i in range(len(sortCSIa1Reshape)):
+    #     # sklearn的归一化是按列转换，因此需要先转为列向量
+    #     sortCSIa1.append(preprocessing.MinMaxScaler().fit_transform(
+    #         np.array(sortCSIa1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
+    #     sortCSIb1.append(preprocessing.MinMaxScaler().fit_transform(
+    #         np.array(sortCSIb1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
+    #     sortCSIe1.append(preprocessing.MinMaxScaler().fit_transform(
+    #         np.array(sortCSIe1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
+    #     sortNoise.append(preprocessing.MinMaxScaler().fit_transform(
+    #         np.array(sortNoiseReshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
 
-            sortCSIa1 = genCoordinate(sortCSIa1)
-            sortCSIb1 = genCoordinate(sortCSIb1)
-            sortCSIe1 = genCoordinate(sortCSIe1)
-            sortNoise = genCoordinate(sortNoise)
+    # sortCSIa1 = genCoordinate(sortCSIa1)
+    # sortCSIb1 = genCoordinate(sortCSIb1)
+    # sortCSIe1 = genCoordinate(sortCSIe1)
+    # sortNoise = genCoordinate(sortNoise)
 
-            # 最后各自的密钥
-            a_list = []
-            b_list = []
-            e_list = []
-            n_list = []
+    sortCSIa1 = genCoordinate(sortCSIa1Reshape)
+    sortCSIb1 = genCoordinate(sortCSIb1Reshape)
+    sortCSIe1 = genCoordinate(sortCSIe1Reshape)
+    sortNoise = genCoordinate(sortNoiseReshape)
 
-            projCSIa1XY = []
-            projCSIb1XY = []
-            projCSIe1XY = []
-            projCSIn1XY = []
+    # 最后各自的密钥
+    a_list = []
+    b_list = []
+    e_list = []
+    n_list = []
 
-            for i in range(len(sortCSIa1)):
-                projCSIa1XY.append([sortCSIa1[i][0], sortCSIa1[i][1]])
-                projCSIb1XY.append([sortCSIb1[i][0], sortCSIb1[i][1]])
-                projCSIe1XY.append([sortCSIe1[i][0], sortCSIe1[i][1]])
-                projCSIn1XY.append([sortNoise[i][0], sortNoise[i][1]])
+    projCSIa1XY = []
+    projCSIb1XY = []
+    projCSIe1XY = []
+    projCSIn1XY = []
 
-            a_list = listToHilbertCurveIndexWithFixedParams(projCSIa1XY, hilbert_p, grid_size)
-            b_list = listToHilbertCurveIndexWithFixedParams(projCSIb1XY, hilbert_p, grid_size)
-            e_list = listToHilbertCurveIndexWithFixedParams(projCSIe1XY, hilbert_p, grid_size)
-            n_list = listToHilbertCurveIndexWithFixedParams(projCSIn1XY, hilbert_p, grid_size)
+    for i in range(len(sortCSIa1)):
+        projCSIa1XY.append([sortCSIa1[i][0], sortCSIa1[i][1]])
+        projCSIb1XY.append([sortCSIb1[i][0], sortCSIb1[i][1]])
+        projCSIe1XY.append([sortCSIe1[i][0], sortCSIe1[i][1]])
+        projCSIn1XY.append([sortNoise[i][0], sortNoise[i][1]])
 
-            # 转为二进制
-            # for i in range(len(alignStr1)):
-            #     a_list += bin(alignStr1[i])[2:]
-            # for i in range(len(alignStr2)):
-            #     b_list += bin(alignStr2[i])[2:]
-            # for i in range(len(alignStr3)):
-            #     e_list += bin(alignStr3[i])[2:]
-            # for i in range(len(alignStr4)):
-            #     n_list += bin(alignStr4[i])[2:]
-            #
-            # # 对齐密钥，随机补全
-            # for i in range(len(a_list) - len(e_list)):
-            #     e_list += str(np.random.randint(0, 2))
-            # for i in range(len(a_list) - len(n_list)):
-            #     n_list += str(np.random.randint(0, 2))
+    a_list = list(listToHilbertCurveIndexWithFixedParams(projCSIa1XY, hilbert_p, grid_size))
+    b_list = list(listToHilbertCurveIndexWithFixedParams(projCSIb1XY, hilbert_p, grid_size))
+    e_list = list(listToHilbertCurveIndexWithFixedParams(projCSIe1XY, hilbert_p, grid_size))
+    n_list = list(listToHilbertCurveIndexWithFixedParams(projCSIn1XY, hilbert_p, grid_size))
 
-            print("keys of a:", len(a_list), a_list)
-            print("keys of b:", len(b_list), b_list)
-            print("keys of e:", len(e_list), e_list)
-            print("keys of n:", len(n_list), n_list)
+    # 转为二进制
+    # for i in range(len(alignStr1)):
+    #     a_list += bin(alignStr1[i])[2:]
+    # for i in range(len(alignStr2)):
+    #     b_list += bin(alignStr2[i])[2:]
+    # for i in range(len(alignStr3)):
+    #     e_list += bin(alignStr3[i])[2:]
+    # for i in range(len(alignStr4)):
+    #     n_list += bin(alignStr4[i])[2:]
+    #
+    # # 对齐密钥，随机补全
+    # for i in range(len(a_list) - len(e_list)):
+    #     e_list += str(np.random.randint(0, 2))
+    # for i in range(len(a_list) - len(n_list)):
+    #     n_list += str(np.random.randint(0, 2))
 
-            sum1 = min(len(a_list), len(b_list))
-            sum2 = 0
-            sum3 = 0
-            sum4 = 0
-            for i in range(0, sum1):
-                sum2 += (a_list[i] == b_list[i])
-            for i in range(min(len(a_list), len(e_list))):
-                sum3 += (a_list[i] == e_list[i])
-            for i in range(min(len(a_list), len(n_list))):
-                sum4 += (a_list[i] == n_list[i])
+    print("keys of a:", len(a_list), a_list)
+    print("keys of b:", len(b_list), b_list)
+    print("keys of e:", len(e_list), e_list)
+    print("keys of n:", len(n_list), n_list)
 
-            if sum2 == sum1:
-                print("\033[0;32;40ma-b", sum2, sum2 / sum1, "\033[0m")
-            else:
-                print("\033[0;31;40ma-b", sum2, sum2 / sum1, "\033[0m")
-            print("a-e", sum3, sum3 / sum1)
-            print("a-n", sum4, sum4 / sum1)
-            print("----------------------")
-            originSum += sum1
-            correctSum += sum2
-            randomSum += sum3
-            noiseSum += sum4
+    sum1 = min(len(a_list), len(b_list))
+    sum2 = 0
+    sum3 = 0
+    sum4 = 0
+    for i in range(0, sum1):
+        sum2 += (a_list[i] == b_list[i])
+    for i in range(min(len(a_list), len(e_list))):
+        sum3 += (a_list[i] == e_list[i])
+    for i in range(min(len(a_list), len(n_list))):
+        sum4 += (a_list[i] == n_list[i])
 
-            originWholeSum += 1
-            correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
-            randomWholeSum = randomWholeSum + 1 if sum3 == sum1 else randomWholeSum
-            noiseWholeSum = noiseWholeSum + 1 if sum4 == sum1 else noiseWholeSum
+    if sum2 == sum1:
+        print("\033[0;32;40ma-b", sum2, sum2 / sum1, "\033[0m")
+    else:
+        print("\033[0;31;40ma-b", sum2, sum2 / sum1, "\033[0m")
+    print("a-e", sum3, sum3 / sum1)
+    print("a-n", sum4, sum4 / sum1)
+    print("----------------------")
+    originSum += sum1
+    correctSum += sum2
+    randomSum += sum3
+    noiseSum += sum4
 
-            # 编码密钥
-            # char_weights = []
-            # weights = Counter(a_list)  # 得到list中元素出现次数
-            # for i in range(len(a_list)):
-            #     char_weights.append((a_list[i], weights[a_list[i]]))
-            # tree = HuffmanTree(char_weights)
-            # tree.get_code()
-            # HuffmanTree.codings += "\n"
+    originWholeSum += 1
+    correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
+    randomWholeSum = randomWholeSum + 1 if sum3 == sum1 else randomWholeSum
+    noiseWholeSum = noiseWholeSum + 1 if sum4 == sum1 else noiseWholeSum
 
-            # for i in range(len(a_list)):
-            #     codings += bin(a_list[i]) + "\n"
+    # 编码密钥
+    # char_weights = []
+    # weights = Counter(a_list)  # 得到list中元素出现次数
+    # for i in range(len(a_list)):
+    #     char_weights.append((a_list[i], weights[a_list[i]]))
+    # tree = HuffmanTree(char_weights)
+    # tree.get_code()
+    # HuffmanTree.codings += "\n"
 
-        # with open('../edit_distance/evaluations/key.txt', 'a', ) as f:
-        #     f.write(codings)
+    # for i in range(len(a_list)):
+    #     codings += bin(a_list[i]) + "\n"
 
-        print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)
-        print("a-e all", randomSum, "/", originSum, "=", randomSum / originSum)
-        print("a-n all", noiseSum, "/", originSum, "=", noiseSum / originSum)
-        print("a-b whole match", correctWholeSum, "/", originWholeSum, "=", correctWholeSum / originWholeSum)
-        print("a-e whole match", randomWholeSum, "/", originWholeSum, "=", randomWholeSum / originWholeSum)
-        print("a-n whole match", noiseWholeSum, "/", originWholeSum, "=", noiseWholeSum / originWholeSum)
-        print("times", times)
-        print(grid_size, hilbert_p)
+# with open('../edit_distance/evaluations/key.txt', 'a', ) as f:
+#     f.write(codings)
+
+print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)
+print("a-e all", randomSum, "/", originSum, "=", randomSum / originSum)
+print("a-n all", noiseSum, "/", originSum, "=", noiseSum / originSum)
+print("a-b whole match", correctWholeSum, "/", originWholeSum, "=", correctWholeSum / originWholeSum)
+print("a-e whole match", randomWholeSum, "/", originWholeSum, "=", randomWholeSum / originWholeSum)
+print("a-n whole match", noiseWholeSum, "/", originWholeSum, "=", noiseWholeSum / originWholeSum)
+print("times", times)
+print(grid_size, hilbert_p)

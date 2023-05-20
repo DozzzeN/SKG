@@ -7,6 +7,9 @@ from matplotlib import pyplot as plt
 from scipy import signal
 from scipy.fft import dct
 from scipy.io import loadmat
+from scipy.stats import boxcox
+
+from sorting_index.zca import ZCA
 
 
 def smooth(x, window_len=11, window='hanning'):
@@ -189,15 +192,15 @@ for staInd in range(0, len(CSIa1Orig), keyLen):
         sortCSIe1 = normal2uniform(tmpCSIe1)
         sortNoise = normal2uniform(tmpNoise)
     elif rawOp == "coxbox":
-        sortCSIa1 = scipy.stats.boxcox(np.abs(tmpCSIa1))[0]
-        sortCSIb1 = scipy.stats.boxcox(np.abs(tmpCSIb1))[0]
-        sortCSIe1 = scipy.stats.boxcox(np.abs(tmpCSIe1))[0]
-        sortNoise = scipy.stats.boxcox(np.abs(tmpNoise))[0]
+        sortCSIa1 = boxcox(np.abs(tmpCSIa1))[0]
+        sortCSIb1 = boxcox(np.abs(tmpCSIb1))[0]
+        sortCSIe1 = boxcox(np.abs(tmpCSIe1))[0]
+        sortNoise = boxcox(np.abs(tmpNoise))[0]
     elif rawOp == "coxbox-uniform":
-        sortCSIa1 = scipy.stats.boxcox(np.abs(tmpCSIa1))[0]
-        sortCSIb1 = scipy.stats.boxcox(np.abs(tmpCSIb1))[0]
-        sortCSIe1 = scipy.stats.boxcox(np.abs(tmpCSIe1))[0]
-        sortNoise = scipy.stats.boxcox(np.abs(tmpNoise))[0]
+        sortCSIa1 = boxcox(np.abs(tmpCSIa1))[0]
+        sortCSIb1 = boxcox(np.abs(tmpCSIb1))[0]
+        sortCSIe1 = boxcox(np.abs(tmpCSIe1))[0]
+        sortNoise = boxcox(np.abs(tmpNoise))[0]
         sortCSIa1 = normal2uniform(sortCSIa1)
         sortCSIb1 = normal2uniform(sortCSIb1)
         sortCSIe1 = normal2uniform(sortCSIe1)

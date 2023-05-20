@@ -4,15 +4,19 @@ import time
 from tkinter import messagebox
 
 import numpy as np
-from dtw import dtw
-from dtw import accelerated_dtw
 from matplotlib import pyplot as plt
 from scipy.fft import dct
 from scipy.io import loadmat
-from scipy.spatial import distance
 from scipy.stats import pearsonr, boxcox
 
-from zca import ZCA
+import random
+import sys
+
+from hilbertcurve.hilbertcurve import HilbertCurve
+from pyentrp import entropy as ent
+from scipy import signal
+from scipy.io import loadmat, savemat
+from sklearn import preprocessing
 
 
 def search(data, p):
@@ -113,67 +117,105 @@ def normal2uniform(data):
     return x_list
 
 
+def findMinInterval(list):
+    l = len(list)
+    intervals = []
+    min_interval = sys.maxsize
+    for i in range(l):
+        for j in range(i + 1, l):
+            interval = math.sqrt(math.pow(list[i][0] - list[j][0], 2) + math.pow(list[i][1] - list[j][1], 2))
+            intervals.append(interval)
+            min_interval = min(min_interval, interval)
+    return min_interval
+
+
+def findMaxInterval(list):
+    l = len(list)
+    max_interval = 0
+    for i in range(l):
+        for j in range(i + 1, l):
+            interval = math.sqrt(math.pow(list[i][0] - list[j][0], 2) + math.pow(list[i][1] - list[j][1], 2))
+            max_interval = max(max_interval, interval)
+    return max_interval
+
+
+def listToHilbertCurveIndex(list):
+    grid_size = findMinInterval(list) / 2 * math.sqrt(2)
+    list = np.array(list) - np.min(list, axis=0)
+    points = np.array(list / grid_size).astype(int)
+
+    column_number = (np.max(list, axis=0)[0] - np.min(list, axis=0)[0]) / grid_size
+    row_number = (np.max(list, axis=0)[1] - np.min(list, axis=0)[1]) / grid_size
+
+    total_grids = (int(column_number) + 1) * (int(row_number) + 1)
+    p = int(math.log2(total_grids))
+
+    print(p, grid_size)
+
+    n = 2
+    hilbert_curve = HilbertCurve(p, n)
+    distances = hilbert_curve.distances_from_points(points, match_type=True)
+    return distances
+
+
+def cut(list):
+    for i in range(len(list)):
+        # list[i] = str(list[i])[0:int(len(str(list[i])) / 2)]
+        list[i] = str(list[i])[0:2]
+        list[i] = int(list[i])
+    return list
+
+
+def genCoordinate(list):
+    res = []
+    for i in range(len(list)):
+        coord = []
+        tmp1 = 0
+        tmp2 = 0
+        for j in range(int(len(list[i]) / 2)):
+            tmp1 += list[i][j]
+        for j in range(int(len(list[i]) / 2), len(list[i])):
+            tmp2 += list[i][j]
+        coord.append(tmp1)
+        coord.append(tmp2)
+        res.append(coord)
+    return res
+
+
+def listToHilbertCurveIndexWithFixedParams(list, p, grid_size):
+    list = np.array(list) - np.min(list, axis=0)
+    points = np.array(list / grid_size).astype(int)
+    # print(points)
+
+    n = 2
+    hilbert_curve = HilbertCurve(p, n)
+    distances = hilbert_curve.distances_from_points(points, match_type=True)
+    return distances
+
+
+# 数组第二维的所有内容求和
+def sumEachDim(list, index):
+    res = 0
+    for i in range(len(list[index])):
+        res += (list[index][i][0] + list[index][i][1])
+        # res += (list[index][i][0] * list[index][i][1])
+    return round(res, 8)
+
+
+def projection(l1, l2, p):
+    v1 = [p[0] - l1[0], p[1] - l1[1]]
+    v2 = [l2[0] - l1[0], l2[1] - l1[1]]
+    v1v2 = v1[0] * v2[0] + v1[1] * v2[1]
+    k = v1v2 / (math.pow(l2[0] - l1[0], 2) + math.pow(l2[1] - l1[1], 2))
+    p0 = [l1[0] + k * (l2[0] - l1[0]), l1[1] + k * (l2[1] - l1[1])]
+    return p0
+
+
 fileName = ["../data/data_mobile_indoor_1.mat",
             "../data/data_mobile_outdoor_1.mat",
             "../data/data_static_outdoor_1.mat",
             "../data/data_static_indoor_1.mat"
             ]
-
-###############################################################################################
-# 乘一次噪音，用value做匹配，安全性好
-# mi1 	    0.9966      0.8  	    1.6 	    1.5946       value, add noise
-# mo1 	    0.9987      0.6  	    1.6 	    1.5980       value, add noise
-# so1 	    0.9847      0.4118   	1.6 	    1.5756       value, add noise
-# si1 	    0.9994      0.8333   	1.6 	    1.5990       value, add noise
-
-# 进行均值化，乘两次噪音，用value做匹配，安全性好
-# mi1 		0.9961      0.8667 		 1.6 		 1.5938      value, add noise twice
-# mo1 		0.997       0.4 		 1.6 		 1.5952      value, add noise twice
-# so1 		0.9854      0.4706 		 1.6 		 1.5766      value, add noise twice
-# si1 		0.9984      0.7361 		 1.6 		 1.5975      value, add noise twice
-
-# 不进行均值化，乘两次噪音，用value做匹配，安全性差
-# mi1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-# mo1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-# so1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-# si1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-
-# 进行均值化，乘两次噪音，用index做匹配，安全性好
-# mi1 		0.9973      0.9333       1.6 		 1.5957      value, add noise twice
-# mo1 		0.9986      0.4          1.6 		 1.5978      value, add noise twice
-# so1 		0.9906      0.4706       1.6 		 1.5849      value, add noise twice
-# si1 		0.9993      0.8056       1.6 		 1.5989      value, add noise twice
-
-# 不进行均值化，乘两次噪音，用index做匹配，安全性差
-# mi1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-# mo1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-# so1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-# si1 		1.0 		1.0 		 1.6 		 1.6 		 value, add noise twice
-
-###############################################################################################
-# 样本排序，乘一次噪音，用value做匹配，安全性差
-# mi1       0.9993      0.8667 		 1.6 		 1.5989      sort the value, add noise
-# mo1 		1.0         1.0 		 1.6 		 1.6         sort the value, add noise
-# so1       0.9992 		0.7059 		 1.6 		 1.5987      sort the value, add noise
-# si1       1.0 		0.9861 		 1.6 		 1.6         sort the value, add noise
-
-# 样本排序，乘一次噪音，用index做匹配，安全性差
-# mi1 		0.9991 		0.9333 		 1.6 		 1.5985      sort the value, add noise
-# mo1 		1.0 		1.0 		 1.6 		 1.6 		 sort the value, add noise
-# so1 		0.9996 		0.7647 		 1.6 		 1.5993 	 sort the value, add noise
-# si1 		1.0 		0.9861 		 1.6 		 1.5999 	 sort the value, add noise
-
-# 样本排序，求幂，用value做匹配，安全性较差
-# mi1 		1.0         1.0 		 1.6 		 1.6 		 sort the value, power and add noise
-# mo1 		1.0         1.0 		 1.6 		 1.6 		 sort the value, power and add noise
-# so1 		1.0         1.0 		 1.6 		 1.6         sort the value, power and add noise
-# si1 		1.0         0.9722       1.6 		 1.6 		 sort the value, power and add noise
-
-# 样本排序，求幂，用index做匹配，安全性较差
-# mi1       1.0         1.0 		 1.6 		 1.6 		 sort the value, power and add noise
-# mo1       1.0         1.0 		 1.6 		 1.6 		 sort the value, power and add noise
-# so1       0.9998      0.9412       1.6 		 1.5997      sort the value, power and add noise
-# si1       0.9999      0.9722       1.6 		 1.5999      sort the value, power and add noise
 
 # 样本排序，无噪音，用value做匹配，安全性好
 # mi1 		0.7434 		0.0 		 1.6 		 1.1894 	 sort the value
@@ -187,50 +229,23 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		0.9092 		0.0 		 1.6 		 1.4547		 sort the value
 # si1 		0.9091 		0.0 		 1.6 		 1.4545		 sort the value
 
-###############################################################################################
 # 样本排序，无噪音，用index做匹配，安全性好
 # mi1       0.7888      0.0          1.6         1.262       index
 # mo1       0.7209      0.0          1.6         1.1534      index
 # so1       0.7179      0.0          1.6         1.1487      index
 # si1       0.7512      0.0          1.6         1.202       index
 
-# 样本排序，乘一次噪音，用value做匹配，安全性好
-# mi1 		0.9994      0.8667       1.6 		 1.599       index, add noise
-# mo1 		1.0         1.0          1.6 		 1.6         index, add noise
-# so1 		0.9988      0.7647       1.6 		 1.5981      index, add noise
-# si1 		0.9997      0.9444       1.6 		 1.5996      index, add noise
-
-# 样本排序，乘一次噪音，用index做匹配，安全性好
-# mi1 		0.9993 		0.8667 		 1.6 		 1.5989 	 index, add noise
-# mo1 		0.9995 		0.8 		 1.6 		 1.5992 	 index, add noise
-# so1 		0.9995 		0.8824 		 1.6 		 1.5992 	 index, add noise
-# si1 		1.0 		0.9722 		 1.6 		 1.5999 	 index, add noise
-
-# 样本排序，乘两次噪音，用value做匹配，安全性差
-# 样本排序，乘两次噪音，用index做匹配，安全性差
-
-# 样本排序，求幂，用value做匹配，安全性好
-# mi1 		0.9994 		0.8 		 1.6 		 1.5991		 index, power and add noise
-# mo1 		0.9998 		0.8 		 1.6 		 1.5997		 index, power and add noise
-# so1 		0.9993 		0.8235 		 1.6 		 1.5989		 index, power and add noise
-# si1 		0.9996 		0.9306 		 1.6 		 1.5994		 index, power and add noise
-
-# 样本排序，求幂，用index做匹配，安全性好
-# mi1 		0.9998 		0.9333 		 1.6 		 1.5997      index, power and add noise
-# mo1 		0.9994 		0.8 		 1.6 		 1.5991      index, power and add noise
-# so1 		0.9994 		0.8235 		 1.6 		 1.599       index, power and add noise
-# si1 		0.9999 		0.9722 		 1.6 		 1.5999      index, power and add noise
-
-isShow = True
+isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
 for f in fileName:
     # print(f)
     rawData = loadmat(f)
     CSIa1Orig = rawData['A'][:, 0]
     CSIb1Orig = rawData['A'][:, 1]
+
     dataLen = len(CSIa1Orig)
 
-    segLen = 5
+    segLen = 8
     keyLen = 256 * segLen
 
     originSum = 0
@@ -259,7 +274,7 @@ for f in fileName:
 
     times = 0
     # no perturbation
-    withoutSort = False
+    withoutSort = True
     addNoise = "mul"
     operationMode = ""
     if withoutSort:
@@ -277,6 +292,13 @@ for f in fileName:
         if addNoise == "mul":
             operationMode = "normal"
             print("normal")
+
+    if withoutSort:
+        grid_size = 0.01
+        hilbert_p = 8
+    else:
+        grid_size = 10
+        hilbert_p = 8
 
     ab_dist = 0
     ae1_dist = 0
@@ -361,67 +383,17 @@ for f in fileName:
             tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
             tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
 
-            ##############################################################################
-
-            # operationMode = "value, add noise"
-            # tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
-            # tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
-            # tmpCSIe1 = np.matmul(tmpCSIe1, randomMatrix)
-            # tmpCSIe2 = np.matmul(tmpCSIe2, randomMatrix)
-
-            # operationMode = "value, add noise twice"
-            # tmpCSIa1 = np.matmul(np.matmul(tmpCSIa1, randomMatrix), randomMatrix)
-            # tmpCSIb1 = np.matmul(np.matmul(tmpCSIb1, randomMatrix), randomMatrix)
-            # tmpCSIe1 = np.matmul(np.matmul(tmpCSIe1, randomMatrix), randomMatrix)
-            # tmpCSIe2 = np.matmul(np.matmul(tmpCSIe2, randomMatrix), randomMatrix)
-
-            ##############################################################################
-
-            # operationMode = "sort the value, add noise"
-            # tmpCSIa1 = np.matmul(np.sort(tmpCSIa1) - np.mean(tmpCSIa1), randomMatrix)
-            # tmpCSIb1 = np.matmul(np.sort(tmpCSIb1) - np.mean(tmpCSIb1), randomMatrix)
-            # tmpCSIe1 = np.matmul(np.sort(tmpCSIe1) - np.mean(tmpCSIe1), randomMatrix)
-            # tmpCSIe2 = np.matmul(np.sort(tmpCSIe2) - np.mean(tmpCSIe2), randomMatrix)
-
-            # operationMode = "sort the value, power and add noise"
-            # powerMatrix = np.random.randint(0, 2, size=keyLen)
-            # tmpCSIa1 = np.matmul(np.power(np.sort(tmpCSIa1), powerMatrix), randomMatrix)
-            # tmpCSIb1 = np.matmul(np.power(np.sort(tmpCSIb1), powerMatrix), randomMatrix)
-            # tmpCSIe1 = np.matmul(np.power(np.sort(tmpCSIe1), powerMatrix), randomMatrix)
-            # tmpCSIe2 = np.matmul(np.power(np.sort(tmpCSIe2), powerMatrix), randomMatrix)
-
             # operationMode = "sort the value"
             # tmpCSIa1 = np.sort(tmpCSIa1)
             # tmpCSIb1 = np.sort(tmpCSIb1)
             # tmpCSIe1 = np.sort(tmpCSIe1)
             # tmpCSIe2 = np.sort(tmpCSIe2)
 
-            ##############################################################################
-
             # operationMode = "index"
             # tmpCSIa1 = np.array(tmpCSIa1).argsort().argsort()
             # tmpCSIb1 = np.array(tmpCSIb1).argsort().argsort()
             # tmpCSIe1 = np.array(tmpCSIe1).argsort().argsort()
             # tmpCSIe2 = np.array(tmpCSIe2).argsort().argsort()
-
-            # operationMode = "index, add noise"
-            # tmpCSIa1 = np.matmul(np.array(tmpCSIa1).argsort().argsort(), randomMatrix)
-            # tmpCSIb1 = np.matmul(np.array(tmpCSIb1).argsort().argsort(), randomMatrix)
-            # tmpCSIe1 = np.matmul(np.array(tmpCSIe1).argsort().argsort(), randomMatrix)
-            # tmpCSIe2 = np.matmul(np.array(tmpCSIe2).argsort().argsort(), randomMatrix)
-
-            # operationMode = "index, add noise twice"
-            # tmpCSIa1 = np.matmul(np.matmul(np.array(tmpCSIa1).argsort().argsort(), randomMatrix), randomMatrix)
-            # tmpCSIb1 = np.matmul(np.matmul(np.array(tmpCSIb1).argsort().argsort(), randomMatrix), randomMatrix)
-            # tmpCSIe1 = np.matmul(np.matmul(np.array(tmpCSIe1).argsort().argsort(), randomMatrix), randomMatrix)
-            # tmpCSIe2 = np.matmul(np.matmul(np.array(tmpCSIe2).argsort().argsort(), randomMatrix), randomMatrix)
-
-            operationMode = "index, power and add noise"
-            powerMatrix = np.random.randint(0, 2, size=keyLen)
-            tmpCSIa1 = np.matmul(np.power(np.array(tmpCSIa1).argsort().argsort(), powerMatrix), randomMatrix)
-            tmpCSIb1 = np.matmul(np.power(np.array(tmpCSIb1).argsort().argsort(), powerMatrix), randomMatrix)
-            tmpCSIe1 = np.matmul(np.power(np.array(tmpCSIe1).argsort().argsort(), powerMatrix), randomMatrix)
-            tmpCSIe2 = np.matmul(np.power(np.array(tmpCSIe2).argsort().argsort(), powerMatrix), randomMatrix)
 
             # inference attack
             tmpNoise1 = np.matmul(np.ones(keyLen), randomMatrix)  # 按列求均值
@@ -441,38 +413,6 @@ for f in fileName:
         tmpNoise1 = (tmpNoise1 - np.min(tmpNoise1)) / (np.max(tmpNoise1) - np.min(tmpNoise1))
         tmpNoise2 = (tmpNoise2 - np.min(tmpNoise2)) / (np.max(tmpNoise2) - np.min(tmpNoise2))
         tmpNoise3 = (tmpNoise3 - np.min(tmpNoise3)) / (np.max(tmpNoise3) - np.min(tmpNoise3))
-
-        # other transformations
-        # tmpCSIa1 = np.array(integral_sq_derivative_increment(tmpCSIa1, tmpNoise)) * tmpCSIa1
-        # tmpCSIb1 = np.array(integral_sq_derivative_increment(tmpCSIb1, tmpNoise)) * tmpCSIb1
-        # tmpCSIe1 = np.array(integral_sq_derivative_increment(tmpCSIe1, tmpNoise)) * tmpCSIe1
-        # tmpCSIe2 = np.array(integral_sq_derivative_increment(tmpCSIe2, tmpNoise)) * tmpCSIe2
-        # print("correlation a-b", pearsonr(tmpCSIa1, tmpCSIb1)[0])
-        # print("correlation a-e1", pearsonr(tmpCSIa1, tmpCSIe1)[0])
-        # print("correlation a-e2", pearsonr(tmpCSIa1, tmpCSIe2)[0])
-        # print("correlation a-n1", pearsonr(tmpCSIa1, tmpNoise1)[0])
-        # print("correlation a-n2", pearsonr(tmpCSIa1, tmpNoise2)[0])
-        # print("correlation a-n3", pearsonr(tmpCSIa1, tmpNoise3)[0])
-        # tmpNoise = np.array(integral_sq_derivative_increment(np.ones(keyLen), tmpNoise)) * np.ones(keyLen)
-
-        # tmpCSIe1 = np.random.normal(loc=np.mean(tmpCSIe1), scale=np.std(tmpCSIe1, ddof=1), size=len(tmpCSIe1))
-
-        # power
-        # noise = np.random.uniform(0, 1, keyLen)
-        # tmpCSIa1 = np.power(np.abs(tmpCSIa1), noise)
-        # tmpCSIb1 = np.power(np.abs(tmpCSIb1), noise)
-        # tmpCSIe1 = np.power(np.abs(tmpCSIe1), noise)
-        # tmpNoise = np.power(np.abs(tmpNoise), noise)
-
-        # box-muller
-        # tmpCSIa1 = boxcox(np.abs(tmpCSIa1))[0]
-        # tmpCSIb1 = boxcox(np.abs(tmpCSIb1))[0]
-        # tmpCSIe1 = boxcox(np.abs(tmpCSIe1))[0]
-        # tmpNoise = boxcox(np.abs(tmpNoise))[0]
-        # tmpCSIa1 = normal2uniform(tmpCSIa1)
-        # tmpCSIb1 = normal2uniform(tmpCSIb1)
-        # tmpCSIe1 = normal2uniform(tmpCSIe1)
-        # tmpNoise = normal2uniform(tmpNoise)
 
         # 最后各自的密钥
         a_list = []
@@ -500,6 +440,40 @@ for f in fileName:
             tmpCSIn2Ind = np.array(tmpNoise2).argsort().argsort()
             tmpCSIn3Ind = np.array(tmpNoise3).argsort().argsort()
 
+        # 取原数据的一部分来reshape
+        shuffling = np.random.permutation(range(keyLen))
+        tmpCSIa1Ind = np.append(tmpCSIa1Ind, tmpCSIa1Ind[shuffling])
+        tmpCSIb1Ind = np.append(tmpCSIb1Ind, tmpCSIb1Ind[shuffling])
+        tmpCSIe1Ind = np.append(tmpCSIe1Ind, tmpCSIe1Ind[shuffling])
+        tmpCSIe2Ind = np.append(tmpCSIe2Ind, tmpCSIe2Ind[shuffling])
+        tmpCSIn1Ind = np.append(tmpCSIn1Ind, tmpCSIn1Ind[shuffling])
+        tmpCSIn2Ind = np.append(tmpCSIn2Ind, tmpCSIn2Ind[shuffling])
+        tmpCSIn3Ind = np.append(tmpCSIn3Ind, tmpCSIn3Ind[shuffling])
+
+        projCSIa1XY = tmpCSIa1Ind.reshape(int(len(tmpCSIa1Ind) / 2), 2)
+        projCSIb1XY = tmpCSIb1Ind.reshape(int(len(tmpCSIb1Ind) / 2), 2)
+        projCSIe1XY = tmpCSIe1Ind.reshape(int(len(tmpCSIe1Ind) / 2), 2)
+        projCSIe2XY = tmpCSIe2Ind.reshape(int(len(tmpCSIe2Ind) / 2), 2)
+        projCSIn1XY = tmpCSIn1Ind.reshape(int(len(tmpCSIn1Ind) / 2), 2)
+        projCSIn2XY = tmpCSIn2Ind.reshape(int(len(tmpCSIn2Ind) / 2), 2)
+        projCSIn3XY = tmpCSIn3Ind.reshape(int(len(tmpCSIn3Ind) / 2), 2)
+
+        tmpCSIa1Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIa1XY, hilbert_p, grid_size))
+        tmpCSIb1Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIb1XY, hilbert_p, grid_size))
+        tmpCSIe1Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIe1XY, hilbert_p, grid_size))
+        tmpCSIe2Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIe2XY, hilbert_p, grid_size))
+        tmpCSIn1Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIn1XY, hilbert_p, grid_size))
+        tmpCSIn2Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIn2XY, hilbert_p, grid_size))
+        tmpCSIn3Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIn3XY, hilbert_p, grid_size))
+
+        tmpCSIa1Ind = np.array(tmpCSIa1Ind).argsort().argsort()
+        tmpCSIb1Ind = np.array(tmpCSIb1Ind).argsort().argsort()
+        tmpCSIe1Ind = np.array(tmpCSIe1Ind).argsort().argsort()
+        tmpCSIe2Ind = np.array(tmpCSIe2Ind).argsort().argsort()
+        tmpCSIn1Ind = np.array(tmpCSIn1Ind).argsort().argsort()
+        tmpCSIn2Ind = np.array(tmpCSIn2Ind).argsort().argsort()
+        tmpCSIn3Ind = np.array(tmpCSIn3Ind).argsort().argsort()
+
         minEpiIndClosenessLsb = np.zeros(int(keyLen / segLen), dtype=int)
         minEpiIndClosenessLse1 = np.zeros(int(keyLen / segLen), dtype=int)
         minEpiIndClosenessLse2 = np.zeros(int(keyLen / segLen), dtype=int)
@@ -508,19 +482,6 @@ for f in fileName:
         minEpiIndClosenessLsn3 = np.zeros(int(keyLen / segLen), dtype=int)
 
         tmpCSIa1IndReshape = np.array(tmpCSIa1Ind).reshape(int(keyLen / segLen), segLen)
-
-        # fig = plt.figure()
-        # ax = fig.gca(projection="3d")
-        # for i in range(len(tmpCSIa1IndReshape)):
-        #     ax.plot(np.ones(len(tmpCSIa1IndReshape[i])) * i, list(range(len(tmpCSIa1IndReshape[i]))), tmpCSIa1IndReshape[i])
-        # plt.show()
-
-        # tmpCSIe1IndReshape = np.array(tmpCSIe1Ind).reshape(int(keyLen / segLen), segLen)
-        # fig = plt.figure()
-        # ax = fig.gca(projection="3d")
-        # for i in range(len(tmpCSIe1IndReshape)):
-        #     ax.plot(np.ones(len(tmpCSIe1IndReshape[i])) * i, list(range(len(tmpCSIe1IndReshape[i]))), tmpCSIe1IndReshape[i])
-        # plt.show()
 
         permutation = list(range(int(keyLen / segLen)))
         combineMetric = list(zip(tmpCSIa1IndReshape, permutation))
@@ -547,14 +508,6 @@ for f in fileName:
                 epiIndn2 = tmpCSIn2Ind[j * segLen: (j + 1) * segLen]
                 epiIndn3 = tmpCSIn3Ind[j * segLen: (j + 1) * segLen]
 
-                # epiIndClosenessLsb[j] = abs(sum(epiIndb1) - sum(epiInda1))
-                # distance = lambda x, y: np.abs(x - y)
-                # epiIndClosenessLsb[j] = accelerated_dtw(epiIndb1, epiInda1, dist=distance)[0]
-                # epiIndClosenessLse1[j] = accelerated_dtw(epiInde1, epiInda1, dist=distance)[0]
-                # epiIndClosenessLse2[j] = accelerated_dtw(epiInde2, epiInda1, dist=distance)[0]
-                # epiIndClosenessLsn1[j] = accelerated_dtw(epiIndn1, epiInda1, dist=distance)[0]
-                # epiIndClosenessLsn2[j] = accelerated_dtw(epiIndn2, epiInda1, dist=distance)[0]
-                # epiIndClosenessLsn3[j] = accelerated_dtw(epiIndn3, epiInda1, dist=distance)[0]
                 epiIndClosenessLsb[j] = sum(abs(epiIndb1 - np.array(epiInda1)))
                 epiIndClosenessLse1[j] = sum(abs(epiInde1 - np.array(epiInda1)))
                 epiIndClosenessLse2[j] = sum(abs(epiInde2 - np.array(epiInda1)))
@@ -613,19 +566,19 @@ for f in fileName:
         for i in range(len(a_list) - len(n3_list)):
             n3_list += str(np.random.randint(0, 2))
 
-        # print("keys of a:", len(a_list), a_list)
+        # # print("keys of a:", len(a_list), a_list)
         # print("keys of a:", len(a_list_number), a_list_number)
-        # print("keys of b:", len(b_list), b_list)
+        # # print("keys of b:", len(b_list), b_list)
         # print("keys of b:", len(b_list_number), b_list_number)
-        # print("keys of e:", len(e_list), e_list)
+        # # print("keys of e:", len(e_list), e_list)
         # print("keys of e1:", len(e1_list_number), e1_list_number)
-        # print("keys of e:", len(e_list), e_list)
+        # # print("keys of e:", len(e_list), e_list)
         # print("keys of e2:", len(e2_list_number), e2_list_number)
-        # print("keys of n1:", len(n1_list), n1_list)
+        # # print("keys of n1:", len(n1_list), n1_list)
         # print("keys of n1:", len(n1_list_number), n1_list_number)
-        # print("keys of n2:", len(n2_list), n2_list)
+        # # print("keys of n2:", len(n2_list), n2_list)
         # print("keys of n2:", len(n2_list_number), n2_list_number)
-        # print("keys of n3:", len(n3_list), n3_list)
+        # # print("keys of n3:", len(n3_list), n3_list)
         # print("keys of n3:", len(n3_list_number), n3_list_number)
 
         sum1 = min(len(a_list), len(b_list))
@@ -726,14 +679,6 @@ for f in fileName:
         noiseWholeSum1 = noiseWholeSum1 + 1 if sum41 == sum1 else noiseWholeSum1
         noiseWholeSum2 = noiseWholeSum2 + 1 if sum42 == sum1 else noiseWholeSum2
         noiseWholeSum3 = noiseWholeSum3 + 1 if sum43 == sum1 else noiseWholeSum3
-
-        # coding = ""
-        # for i in range(len(a_list)):
-        #     coding += a_list[i]
-        # codings += coding + "\n"
-        #
-        # with open('./key/' + fileName + ".txt", 'a', ) as f:
-        #     f.write(codings)
 
     if isShow:
         print("\033[0;34;40ma-b bit agreement rate", correctSum, "/", originSum, "=", round(correctSum / originSum, 10),

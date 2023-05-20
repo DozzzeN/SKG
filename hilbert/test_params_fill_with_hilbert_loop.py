@@ -28,55 +28,11 @@ def findMaxInterval(list):
     return max_interval
 
 
-def findMinX(list):
-    l = len(list)
-    min_X = sys.maxsize
-    for i in range(l):
-        min_X = min(min_X, list[i][0])
-    return min_X
-
-
-def findMinY(list):
-    l = len(list)
-    min_Y = sys.maxsize
-    for i in range(l):
-        min_Y = min(min_Y, list[i][1])
-    return min_Y
-
-
-def findMaxX(list):
-    l = len(list)
-    max_X = 0
-    for i in range(l):
-        max_X = max(max_X, list[i][0])
-    return max_X
-
-
-def findMaxY(list):
-    l = len(list)
-    max_Y = 0
-    for i in range(l):
-        max_Y = max(max_Y, list[i][1])
-    return max_Y
-
-
 def listToHilbertCurveIndex(list):
     grid_size = findMinInterval(list) / 2 * math.sqrt(2)
-
-    minX = findMinX(list)
-    minY = findMinY(list)
-    for i in range(len(list)):
-        list[i][0] -= minX
-        list[i][1] -= minY
-
-    points = []
-
-    for i in range(len(list)):
-        indexX = int(list[i][0] / grid_size)
-        indexY = int(list[i][1] / grid_size)
-        points.append([indexX, indexY])
-
-    total_grids = findMaxX(points) * findMaxY(points)
+    list = np.array(list) - np.min(list, axis=0)
+    points = np.array(list / grid_size).astype(int)
+    total_grids = np.max(points, axis=0)[0] * np.max(points, axis=0)[1]
     p = math.ceil(math.log10(total_grids) / math.log10(2))
 
     print(p, grid_size)
@@ -113,21 +69,11 @@ def genCoordinate(list):
 
 
 def listToHilbertCurveIndexWithFixedGrid(list, grid_size):
-    minX = findMinX(list)
-    minY = findMinY(list)
-    for i in range(len(list)):
-        list[i][0] -= minX
-        list[i][1] -= minY
-
-    points = []
-
-    for i in range(len(list)):
-        indexX = int(list[i][0] / grid_size)
-        indexY = int(list[i][1] / grid_size)
-        points.append([indexX, indexY])
+    list = np.array(list) - np.min(list, axis=0)
+    points = np.array(list / grid_size).astype(int)
 
     n = 2
-    total_grids = findMaxX(points) * findMaxY(points)
+    total_grids = np.max(points, axis=0)[0] * np.max(points, axis=0)[1]
     p = int(math.log10(total_grids) / math.log10(2))
     print(total_grids, p)
 
@@ -137,21 +83,11 @@ def listToHilbertCurveIndexWithFixedGrid(list, grid_size):
 
 
 def listToHilbertCurveIndexWithFixedParams(list, p, grid_size):
-    minX = findMinX(list)
-    minY = findMinY(list)
-    for i in range(len(list)):
-        list[i][0] -= minX
-        list[i][1] -= minY
+    list = np.array(list) - np.min(list, axis=0)
+    points = np.array(list / grid_size).astype(int)
 
-    points = []
-
-    for i in range(len(list)):
-        indexX = int(list[i][0] / grid_size)
-        indexY = int(list[i][1] / grid_size)
-        points.append([indexX, indexY])
-
-    maxX = 1 if findMaxX(points) == 0 else findMaxX(points)
-    maxY = 1 if findMaxY(points) == 0 else findMaxY(points)
+    maxX = 1 if np.max(points, axis=0)[0] == 0 else np.max(points, axis=0)[0]
+    maxY = 1 if np.max(points, axis=0)[1] == 0 else np.max(points, axis=0)[1]
 
     if maxX > 2 ** p - 1:
         for i in range(len(points)):
