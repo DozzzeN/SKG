@@ -221,35 +221,13 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, CSIe1Orig, segLen, dataLen):
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig), np.array(_CSIe1Orig)
 
 
-l1 = [1, 0]
-l2 = [0, 1]
 fileName = "../data/data_mobile_indoor_1.mat"
 rawData = loadmat(fileName)
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 
-dataLen = len(CSIa1Orig)  # 6745
-
-# rawData = loadmat('../data/data_static_indoor_1.mat')
-#
-# CSIa1Orig = rawData['A'][:, 0]
-# CSIb1Orig = rawData['A'][:, 1]
-#
-# CSIa1Orig = CSIa1Orig[25000:30000]
-# CSIb1Orig = CSIb1Orig[25000:30000]
-
-# CSIa1OrigRaw = rawData['A'][:, 0]
-# CSIb1OrigRaw = rawData['A'][:, 1]
-#
-# CSIa1Orig = []
-# CSIb1Orig = []
-# for i in range(2000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i])
-#     CSIb1Orig.append(CSIb1OrigRaw[i])
-# for i in range(5000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i + 20000])
-#     CSIb1Orig.append(CSIb1OrigRaw[i + 20000])
+dataLen = len(CSIa1Orig)
 
 CSIa1Orig = np.array(CSIa1Orig)
 CSIb1Orig = np.array(CSIb1Orig)
@@ -286,8 +264,8 @@ noiseAdd = np.random.normal(loc=0, scale=10, size=dataLen)  ## Addition item nor
 
 sft = 2
 intvl = 2 * sft + 1
-keyLen = int(128)
-segLen = int(math.pow(2, 1))
+keyLen = 128
+segLen = int(math.pow(2, 2))
 addNoise = False
 
 codings = ""
@@ -347,11 +325,6 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
         tmpCSIb1 = tmpPulse * tmpCSIb1
         tmpCSIe1 = tmpPulse * tmpCSIe1
 
-    sortCSIa1 = tmpCSIa1
-    sortCSIb1 = tmpCSIb1
-    sortCSIe1 = tmpCSIe1
-    sortNoise = tmpNoise
-
     CSIa1Orig[range(staInd, endInd, 1)] = tmpCSIa1
     CSIb1Orig[range(staInd, endInd, 1)] = tmpCSIb1
     CSIe1Orig[range(staInd, endInd, 1)] = tmpCSIe1
@@ -381,10 +354,10 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
             sortNoise[ii - permLen] = np.mean(CSIn1Tmp)
 
     # sortCSIa1是原始算法中排序前的数据
-    sortCSIa1 = np.log10(np.abs(sortCSIa1))
-    sortCSIb1 = np.log10(np.abs(sortCSIb1))
-    sortCSIe1 = np.log10(np.abs(sortCSIe1))
-    sortNoise = np.log10(np.abs(sortNoise))
+    sortCSIa1 = np.log10(np.abs(sortCSIa1) + 0.1)
+    sortCSIb1 = np.log10(np.abs(sortCSIb1) + 0.1)
+    sortCSIe1 = np.log10(np.abs(sortCSIe1) + 0.1)
+    sortNoise = np.log10(np.abs(sortNoise) + 0.1)
 
     # 取原数据的一部分来reshape
     sortCSIa1Reshape = sortCSIa1[0:segLen * int(len(sortCSIa1) / segLen)]

@@ -130,20 +130,15 @@ fileName = ["../data/data_mobile_indoor_1.mat",
             ]
 
 # file 	     bit 	         key 	     KGR 	     KGR with error free 	 mode
-# mi1 		 0.9537 		 0.4 		 0.125 		 0.1192 		 no sorting
-# mo1 		 0.8725 		 0.0 		 0.125 		 0.1091 		 no sorting
-# so1 		 0.9548 		 0.0588 	 0.125 		 0.1193 		 no sorting
-# si1 		 0.9723 		 0.2361 	 0.125 		 0.1215 		 no sorting
-
-# mi1 		 0.9825 		 0.6 		 0.0893 		 0.0877 		 no sorting
+# mi1 		 0.9875 		 0.6 		 0.0893 		 0.0882 		 no sorting
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
-# so1 		 0.9802 		 0.5 		 0.0893 		 0.0875 		 no sorting
-# si1 		 0.9925 		 0.6731 	 0.0893 		 0.0886 		 no sorting
+# so1 		 0.9807 		 0.5 		 0.0893 		 0.0876 		 no sorting
+# si1 		 0.9941 		 0.6731 	 0.0893 		 0.0888 		 no sorting
 
-# mi1 		 0.9806 		 0.7 		 0.0893 		 0.0876 		 index
+# mi1 		 0.9862 		 0.7 		 0.0893 		 0.0881 		 index
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
-# so1 		 0.9901 		 0.6667 	 0.0893 		 0.0884 		 index
-# si1 		 0.9948 		 0.75 		 0.0893 		 0.0888 		 index
+# so1 		 0.9891 		 0.6667 	 0.0893 		 0.0883 		 index
+# si1 		 0.9952 		 0.75 		 0.0893 		 0.0889 		 index
 
 isShow = True
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
@@ -285,11 +280,11 @@ for f in fileName:
             # tmpCSIe1 = np.sort(tmpCSIe1)
             # tmpCSIe2 = np.sort(tmpCSIe2)
 
-            operationMode = "index"
-            tmpCSIa1 = np.array(tmpCSIa1).argsort().argsort()
-            tmpCSIb1 = np.array(tmpCSIb1).argsort().argsort()
-            tmpCSIe1 = np.array(tmpCSIe1).argsort().argsort()
-            tmpCSIe2 = np.array(tmpCSIe2).argsort().argsort()
+            # operationMode = "index"
+            # tmpCSIa1 = np.array(tmpCSIa1).argsort().argsort()
+            # tmpCSIb1 = np.array(tmpCSIb1).argsort().argsort()
+            # tmpCSIe1 = np.array(tmpCSIe1).argsort().argsort()
+            # tmpCSIe2 = np.array(tmpCSIe2).argsort().argsort()
 
             # inference attack
             tmpNoise1 = np.matmul(np.ones(keyLen), randomMatrix)  # 按列求均值
@@ -366,8 +361,8 @@ for f in fileName:
             for j in range(step):
                 CSIa1Back[i].append(tmpCSIa1Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
 
-        random.shuffle(rand_out_polygon)
-        random.shuffle(rand_in_polygon)
+        # random.shuffle(rand_out_polygon)
+        # random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIb1Reshape)):
             for j in range(step):
                 CSIb1Back[i].append(tmpCSIb1Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
@@ -437,6 +432,7 @@ for f in fileName:
         n3_list_number = []
 
         for i in range(len(CSIa1Back)):
+            aa_hd = sys.maxsize
             ab_hd = sys.maxsize
             ae1_hd = sys.maxsize
             ae2_hd = sys.maxsize
@@ -444,6 +440,7 @@ for f in fileName:
             an2_hd = sys.maxsize
             an3_hd = sys.maxsize
 
+            aa_index = 0
             ab_index = 0
             ae1_index = 0
             ae2_index = 0
@@ -452,12 +449,16 @@ for f in fileName:
             an3_index = 0
             for j in range(len(CSIa1Back)):
                 # 整体计算两个集合中每个多边形的hd值，取最匹配的（hd距离最接近的两个多边形）
-                ab_d = standard_hd(CSIa1Back[i], CSIb1Back[j])
-                ae1_d = standard_hd(CSIa1Back[i], CSIe1Back[j])
-                ae2_d = standard_hd(CSIa1Back[i], CSIe2Back[j])
-                an1_d = standard_hd(CSIa1Back[i], CSIn1Back[j])
-                an2_d = standard_hd(CSIa1Back[i], CSIn2Back[j])
-                an3_d = standard_hd(CSIa1Back[i], CSIn3Back[j])
+                aa_d = standard_hd(CSIa1Back[i], tmpCSIa1Reshape[j])
+                ab_d = standard_hd(CSIa1Back[i], tmpCSIb1Reshape[j])
+                ae1_d = standard_hd(CSIa1Back[i], tmpCSIe1Reshape[j])
+                ae2_d = standard_hd(CSIa1Back[i], tmpCSIe2Reshape[j])
+                an1_d = standard_hd(CSIa1Back[i], tmpCSIn1Reshape[j])
+                an2_d = standard_hd(CSIa1Back[i], tmpCSIn2Reshape[j])
+                an3_d = standard_hd(CSIa1Back[i], tmpCSIn3Reshape[j])
+                if aa_d < aa_hd:
+                    aa_hd = aa_d
+                    aa_index = j
                 if ab_d < ab_hd:
                     ab_hd = ab_d
                     ab_index = j
@@ -479,7 +480,7 @@ for f in fileName:
 
             # 将横纵坐标之和的值作为排序标准进行排序，然后进行查找，基于原数组的位置作为密钥值
             # 多边形内排序后相加后的结果不准确，float精度丢失，使得无法找到匹配的
-            a_list_number.append(np.where(oneDimCSIa1 == sumEachDim(CSIa1Back, i))[0][0])
+            a_list_number.append(np.where(oneDimCSIa1 == sumEachDim(CSIa1Back, aa_index))[0][0])
             b_list_number.append(np.where(oneDimCSIb1 == sumEachDim(CSIb1Back, ab_index))[0][0])
             e1_list_number.append(np.where(oneDimCSIe1 == sumEachDim(CSIe1Back, ae1_index))[0][0])
             e2_list_number.append(np.where(oneDimCSIe2 == sumEachDim(CSIe2Back, ae2_index))[0][0])
