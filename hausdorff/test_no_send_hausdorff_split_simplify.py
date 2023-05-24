@@ -185,7 +185,7 @@ for f in fileName:
     if withoutSort:
         if addNoise == "mul":
             operationMode = "no sorting"
-            print("no sorting")
+            # print("no sorting")
     if withoutSort:
         if addNoise == "":
             operationMode = "no sorting and no perturbation"
@@ -355,7 +355,9 @@ for f in fileName:
         rand_out_polygon = list(range(len(tmpCSIa1Reshape)))
         rand_in_polygon = list(range(step))
 
+        random.seed(0)
         random.shuffle(rand_out_polygon)
+        random.seed(0)
         random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIa1Reshape)):
             for j in range(step):
@@ -367,32 +369,32 @@ for f in fileName:
             for j in range(step):
                 CSIb1Back[i].append(tmpCSIb1Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
 
-        random.shuffle(rand_out_polygon)
-        random.shuffle(rand_in_polygon)
+        # random.shuffle(rand_out_polygon)
+        # random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIe1Reshape)):
             for j in range(step):
                 CSIe1Back[i].append(tmpCSIe1Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
 
-        random.shuffle(rand_out_polygon)
-        random.shuffle(rand_in_polygon)
+        # random.shuffle(rand_out_polygon)
+        # random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIe2Reshape)):
             for j in range(step):
                 CSIe2Back[i].append(tmpCSIe2Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
 
-        random.shuffle(rand_out_polygon)
-        random.shuffle(rand_in_polygon)
+        # random.shuffle(rand_out_polygon)
+        # random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIn1Reshape)):
             for j in range(step):
                 CSIn1Back[i].append(tmpCSIn1Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
 
-        random.shuffle(rand_out_polygon)
-        random.shuffle(rand_in_polygon)
+        # random.shuffle(rand_out_polygon)
+        # random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIn2Reshape)):
             for j in range(step):
                 CSIn2Back[i].append(tmpCSIn2Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
 
-        random.shuffle(rand_out_polygon)
-        random.shuffle(rand_in_polygon)
+        # random.shuffle(rand_out_polygon)
+        # random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIn3Reshape)):
             for j in range(step):
                 CSIn3Back[i].append(tmpCSIn3Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
@@ -431,84 +433,48 @@ for f in fileName:
         n2_list_number = []
         n3_list_number = []
 
+        minEpiIndClosenessLsa = np.zeros(len(CSIa1Back), dtype=int)
+        minEpiIndClosenessLsb = np.zeros(len(CSIa1Back), dtype=int)
+        minEpiIndClosenessLse1 = np.zeros(len(CSIa1Back), dtype=int)
+        minEpiIndClosenessLse2 = np.zeros(len(CSIa1Back), dtype=int)
+        minEpiIndClosenessLsn1 = np.zeros(len(CSIa1Back), dtype=int)
+        minEpiIndClosenessLsn2 = np.zeros(len(CSIa1Back), dtype=int)
+        minEpiIndClosenessLsn3 = np.zeros(len(CSIa1Back), dtype=int)
+
         for i in range(len(CSIa1Back)):
-            aa_hd = sys.maxsize
-            ab_hd = sys.maxsize
-            ae1_hd = sys.maxsize
-            ae2_hd = sys.maxsize
-            an1_hd = sys.maxsize
-            an2_hd = sys.maxsize
-            an3_hd = sys.maxsize
+            epiIndClosenessLsa = np.zeros(len(CSIa1Back))
+            epiIndClosenessLsb = np.zeros(len(CSIa1Back))
+            epiIndClosenessLse1 = np.zeros(len(CSIa1Back))
+            epiIndClosenessLse2 = np.zeros(len(CSIa1Back))
+            epiIndClosenessLsn1 = np.zeros(len(CSIa1Back))
+            epiIndClosenessLsn2 = np.zeros(len(CSIa1Back))
+            epiIndClosenessLsn3 = np.zeros(len(CSIa1Back))
 
-            aa_index = 0
-            ab_index = 0
-            ae1_index = 0
-            ae2_index = 0
-            an1_index = 0
-            an2_index = 0
-            an3_index = 0
             for j in range(len(CSIa1Back)):
-                # 整体计算两个集合中每个多边形的hd值，取最匹配的（hd距离最接近的两个多边形）
-                aa_d = standard_hd(CSIa1Back[i], tmpCSIa1Reshape[j])
-                ab_d = standard_hd(CSIa1Back[i], tmpCSIb1Reshape[j])
-                ae1_d = standard_hd(CSIa1Back[i], tmpCSIe1Reshape[j])
-                ae2_d = standard_hd(CSIa1Back[i], tmpCSIe2Reshape[j])
-                an1_d = standard_hd(CSIa1Back[i], tmpCSIn1Reshape[j])
-                an2_d = standard_hd(CSIa1Back[i], tmpCSIn2Reshape[j])
-                an3_d = standard_hd(CSIa1Back[i], tmpCSIn3Reshape[j])
-                if aa_d < aa_hd:
-                    aa_hd = aa_d
-                    aa_index = j
-                if ab_d < ab_hd:
-                    ab_hd = ab_d
-                    ab_index = j
-                if ae1_d < ae1_hd:
-                    ae1_hd = ae1_d
-                    ae1_index = j
-                if ae2_d < ae2_hd:
-                    ae2_hd = ae2_d
-                    ae2_index = j
-                if an1_d < an1_hd:
-                    an1_hd = an1_d
-                    an1_index = j
-                if an2_d < an2_hd:
-                    an2_hd = an2_d
-                    an2_index = j
-                if an3_d < an3_hd:
-                    an3_hd = an3_d
-                    an3_index = j
+                epiIndClosenessLsa[j] = standard_hd(CSIa1Back[i], tmpCSIa1Reshape[j])
+                epiIndClosenessLsb[j] = standard_hd(CSIb1Back[i], tmpCSIb1Reshape[j])
+                epiIndClosenessLse1[j] = standard_hd(CSIe1Back[i], tmpCSIe1Reshape[j])
+                epiIndClosenessLse2[j] = standard_hd(CSIe2Back[i], tmpCSIe2Reshape[j])
+                epiIndClosenessLsn1[j] = standard_hd(CSIn1Back[i], tmpCSIn1Reshape[j])
+                epiIndClosenessLsn2[j] = standard_hd(CSIn2Back[i], tmpCSIn2Reshape[j])
+                epiIndClosenessLsn3[j] = standard_hd(CSIn3Back[i], tmpCSIn3Reshape[j])
 
-            # 将横纵坐标之和的值作为排序标准进行排序，然后进行查找，基于原数组的位置作为密钥值
-            # 多边形内排序后相加后的结果不准确，float精度丢失，使得无法找到匹配的
-            a_list_number.append(np.where(oneDimCSIa1 == sumEachDim(CSIa1Back, aa_index))[0][0])
-            b_list_number.append(np.where(oneDimCSIb1 == sumEachDim(CSIb1Back, ab_index))[0][0])
-            e1_list_number.append(np.where(oneDimCSIe1 == sumEachDim(CSIe1Back, ae1_index))[0][0])
-            e2_list_number.append(np.where(oneDimCSIe2 == sumEachDim(CSIe2Back, ae2_index))[0][0])
-            n1_list_number.append(np.where(oneDimCSIn1 == sumEachDim(CSIn1Back, an1_index))[0][0])
-            n2_list_number.append(np.where(oneDimCSIn1 == sumEachDim(CSIn1Back, an2_index))[0][0])
-            n3_list_number.append(np.where(oneDimCSIn1 == sumEachDim(CSIn1Back, an3_index))[0][0])
-            # print("\n")
-            # print("\033[0;32;40mCSIa1", CSIa1Back[i], "\033[0m")
-            # print("ab_hd", ab_hd, "\033[0;32;40mCSIb1", CSIb1Back[ab_index], "\033[0m")
-            # print("ae_hd", ae_hd, "CSIe1", CSIe1Back[ae_index])
-            # print("an_hd", an_hd, "CSIn1", CSIn1Back[an_index])
+            minEpiIndClosenessLsa[i] = np.argmin(epiIndClosenessLsa)
+            minEpiIndClosenessLsb[i] = np.argmin(epiIndClosenessLsb)
+            minEpiIndClosenessLse1[i] = np.argmin(epiIndClosenessLse1)
+            minEpiIndClosenessLse2[i] = np.argmin(epiIndClosenessLse2)
+            minEpiIndClosenessLsn1[i] = np.argmin(epiIndClosenessLsn1)
+            minEpiIndClosenessLsn2[i] = np.argmin(epiIndClosenessLsn2)
+            minEpiIndClosenessLsn3[i] = np.argmin(epiIndClosenessLsn3)
 
-            # 比较各个独立计算的hd值的差异
-            ab_max = max(ab_max, ab_hd)
-            ae1_max = max(ae1_max, ae1_hd)
-            ae2_max = max(ae2_max, ae2_hd)
-            an1_max = max(an1_max, an1_hd)
-            an2_max = max(an2_max, an2_hd)
-            an3_max = max(an3_max, an3_hd)
-
-            # 绘图
-            xa, ya = zip(*sortCSIa1Add[i])
-            xb, yb = zip(*sortCSIb1Add[ab_index])
-            xe1, ye1 = zip(*sortCSIe1Add[ae1_index])
-            xe2, ye2 = zip(*sortCSIe2Add[ae2_index])
-            xn1, yn1 = zip(*sortCSIn1Add[an1_index])
-            xn2, yn2 = zip(*sortCSIn2Add[an2_index])
-            xn3, yn3 = zip(*sortCSIn3Add[an3_index])
+            # # 绘图
+            # xa, ya = zip(*sortCSIa1Add[minEpiIndClosenessLsa[i]])
+            # xb, yb = zip(*sortCSIb1Add[minEpiIndClosenessLsb[i]])
+            # xe1, ye1 = zip(*sortCSIe1Add[minEpiIndClosenessLse1[i]])
+            # xe2, ye2 = zip(*sortCSIe2Add[minEpiIndClosenessLse2[i]])
+            # xn1, yn1 = zip(*sortCSIn1Add[minEpiIndClosenessLsn1[i]])
+            # xn2, yn2 = zip(*sortCSIn2Add[minEpiIndClosenessLsn2[i]])
+            # xn3, yn3 = zip(*sortCSIn3Add[minEpiIndClosenessLsn3[i]])
             # plt.figure()
             # plt.plot(xa, ya, color="red", linewidth=2.5, label="a")
             # plt.plot(xb, yb, color="blue", linewidth=1, label="b")
@@ -517,6 +483,14 @@ for f in fileName:
             # # plt.plot(xn, yn, color="yellow", linewidth=2.5, label="n") # 数量级差别太大，不方便显示
             # plt.legend(loc='upper left')
             # plt.show()
+
+        a_list_number = list(minEpiIndClosenessLsa)
+        b_list_number = list(minEpiIndClosenessLsb)
+        e1_list_number = list(minEpiIndClosenessLse1)
+        e2_list_number = list(minEpiIndClosenessLse2)
+        n1_list_number = list(minEpiIndClosenessLsn1)
+        n2_list_number = list(minEpiIndClosenessLsn2)
+        n3_list_number = list(minEpiIndClosenessLsn3)
 
         # 转成二进制，0填充成0000
         for i in range(len(a_list_number)):
@@ -553,8 +527,6 @@ for f in fileName:
         for i in range(len(a_list) - len(n3_list)):
             n3_list += str(np.random.randint(0, 2))
 
-        # print("ab_max", ab_max, "ae1_max", ae1_max, "ae2_max", ae2_max, "an1_max",
-        #       an1_max, "an2_max", an2_max, "an3_max", an3_max)
         # print("keys of a:", a_list)
         # print("keys of a:", a_list_number)
         # print("keys of b:", b_list)
