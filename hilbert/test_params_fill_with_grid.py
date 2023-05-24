@@ -254,35 +254,13 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, CSIe1Orig, segLen, dataLen):
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig), np.array(_CSIe1Orig)
 
 
-l1 = [1, 0]
-l2 = [0, 1]
 fileName = "../data/data_mobile_indoor_1.mat"
 rawData = loadmat(fileName)
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 
-dataLen = len(CSIa1Orig)  # 6745
-
-# rawData = loadmat('../data/data_static_indoor_1.mat')
-#
-# CSIa1Orig = rawData['A'][:, 0]
-# CSIb1Orig = rawData['A'][:, 1]
-#
-# CSIa1Orig = CSIa1Orig[25000:30000]
-# CSIb1Orig = CSIb1Orig[25000:30000]
-
-# CSIa1OrigRaw = rawData['A'][:, 0]
-# CSIb1OrigRaw = rawData['A'][:, 1]
-#
-# CSIa1Orig = []
-# CSIb1Orig = []
-# for i in range(2000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i])
-#     CSIb1Orig.append(CSIb1OrigRaw[i])
-# for i in range(5000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i + 20000])
-#     CSIb1Orig.append(CSIb1OrigRaw[i + 20000])
+dataLen = len(CSIa1Orig)
 
 CSIa1Orig = np.array(CSIa1Orig)
 CSIb1Orig = np.array(CSIb1Orig)
@@ -360,26 +338,6 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
 
     tmpCSIa1 = tmpCSIa1 - (np.mean(tmpCSIa1) - np.mean(tmpCSIb1))  # Mean value consistency
 
-    # linspace函数生成元素为50的等间隔数列，可以指定第三个参数为元素个数
-    # signal.square返回周期性的方波波形
-    tmpPulse = signal.square(
-        2 * np.pi * 1 / intvl * np.linspace(0, np.pi * 0.5 * keyLen, keyLen * intvl))  ## Rectangular pulse
-
-    if addNoise:
-        tmpCSIa1 = tmpPulse * (
-                np.float_power(np.abs(tmpCSIa1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIa1))
-        tmpCSIb1 = tmpPulse * (
-                np.float_power(np.abs(tmpCSIb1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIb1))
-        tmpCSIe1 = tmpPulse * (
-                np.float_power(np.abs(tmpCSIe1), tmpNoise) * np.float_power(np.abs(tmpNoise), tmpCSIe1))
-        # tmpCSIa1 = tmpPulse * np.float_power(np.abs(tmpCSIa1), tmpNoise)
-        # tmpCSIb1 = tmpPulse * np.float_power(np.abs(tmpCSIb1), tmpNoise)
-        # tmpCSIe1 = tmpPulse * np.float_power(np.abs(tmpCSIe1), tmpNoise)
-    else:
-        tmpCSIa1 = tmpPulse * tmpCSIa1
-        tmpCSIb1 = tmpPulse * tmpCSIb1
-        tmpCSIe1 = tmpPulse * tmpCSIe1
-
     CSIa1Orig[range(staInd, endInd, 1)] = tmpCSIa1
     CSIb1Orig[range(staInd, endInd, 1)] = tmpCSIb1
     CSIe1Orig[range(staInd, endInd, 1)] = tmpCSIe1
@@ -424,18 +382,6 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     sortCSIb1Reshape = sortCSIb1Reshape.reshape(int(len(sortCSIb1Reshape) / segLen), segLen)
     sortCSIe1Reshape = sortCSIe1Reshape.reshape(int(len(sortCSIe1Reshape) / segLen), segLen)
     sortNoiseReshape = sortNoiseReshape.reshape(int(len(sortNoiseReshape) / segLen), segLen)
-
-    # # 归一化
-    # for i in range(len(sortCSIa1Reshape)):
-    #     # sklearn的归一化是按列转换，因此需要先转为列向量
-    #     sortCSIa1.append(preprocessing.MinMaxScaler().fit_transform(
-    #         np.array(sortCSIa1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
-    #     sortCSIb1.append(preprocessing.MinMaxScaler().fit_transform(
-    #         np.array(sortCSIb1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
-    #     sortCSIe1.append(preprocessing.MinMaxScaler().fit_transform(
-    #         np.array(sortCSIe1Reshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
-    #     sortNoise.append(preprocessing.MinMaxScaler().fit_transform(
-    #         np.array(sortNoiseReshape[i]).reshape(-1, 1)).reshape(1, -1).tolist()[0])
 
     sortCSIa1 = genCoordinate(sortCSIa1Reshape)
     sortCSIb1 = genCoordinate(sortCSIb1Reshape)

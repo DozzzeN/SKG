@@ -116,28 +116,19 @@ def sumEachDim(list, index):
 
 rawData = loadmat('../data/data_mobile_indoor_1.mat')
 
+# 
+
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
-# CSIa1OrigRaw = rawData['A'][:, 0]
-# CSIb1OrigRaw = rawData['A'][:, 1]
-#
-# CSIa1Orig = []
-# CSIb1Orig = []
-# for i in range(2000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i])
-#     CSIb1Orig.append(CSIb1OrigRaw[i])
-# for i in range(5000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i + 20000])
-#     CSIb1Orig.append(CSIb1OrigRaw[i + 20000])
 
 CSIa1Orig = np.array(CSIa1Orig)
 CSIb1Orig = np.array(CSIb1Orig)
 
-plt.figure()
-plt.plot(CSIa1Orig, color="red", linewidth=.05, label="a")
+# plt.figure()
+# plt.plot(CSIa1Orig, color="red", linewidth=.05, label="a")
 # plt.plot(CSIb1Orig, color="blue", linewidth=.05, label="b")
-plt.legend(loc='upper left')
-plt.show()
+# plt.legend(loc='upper left')
+# plt.show()
 
 rand_CSI = list(range(len(CSIa1Orig)))
 random.shuffle(rand_CSI)
@@ -149,13 +140,13 @@ for i in range(len(CSIa1Orig)):
     CSIa1Orig[i] = CSIa1OrigBack[rand_CSI[i]]
     CSIb1Orig[i] = CSIb1OrigBack[rand_CSI[i]]
 
-plt.figure()
-plt.plot(CSIa1Orig, color="red", linewidth=.05, label="a")
+# plt.figure()
+# plt.plot(CSIa1Orig, color="red", linewidth=.05, label="a")
 # plt.plot(CSIb1Orig, color="blue", linewidth=.05, label="b")
-plt.legend(loc='upper left')
-plt.show()
+# plt.legend(loc='upper left')
+# plt.show()
 
-dataLen = len(CSIa1Orig)  # 6745
+dataLen = len(CSIa1Orig)
 
 CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=dataLen)
 
@@ -170,8 +161,7 @@ CSIe1OrigBack = CSIe1Orig.copy()
 noise = np.random.normal(loc=-1, scale=1, size=dataLen)  ## Multiplication item normal distribution
 noiseAdd = np.random.normal(loc=0, scale=10, size=dataLen)  ## Addition item normal distribution
 
-sft = 2
-intvl = 2 * sft + 1
+intvl = 5
 keyLen = 1024
 addNoise = False
 
@@ -181,7 +171,6 @@ randomSum = 0
 noiseSum = 0
 
 codings = ""
-# for ii in range(0, 5):
 for staInd in range(0, 10 * intvl + 1, intvl):
     endInd = staInd + keyLen * intvl
     print("range:", staInd, endInd)
