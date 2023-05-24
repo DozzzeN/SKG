@@ -182,35 +182,7 @@ rawData = loadmat('../data/data_mobile_indoor_1.mat')
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 
-# rawData = loadmat('../data/data_static_indoor_1.mat')
-#
-# CSIa1OrigRaw = rawData['A'][:, 0]
-# CSIb1OrigRaw = rawData['A'][:, 1]
-#
-# CSIa1Orig = []
-# CSIb1Orig = []
-# for i in range(2000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i])
-#     CSIb1Orig.append(CSIb1OrigRaw[i])
-# for i in range(5000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i + 20000])
-#     CSIb1Orig.append(CSIb1OrigRaw[i + 20000])
-#
-# CSIa1Orig = np.array(CSIa1Orig)
-# CSIb1Orig = np.array(CSIb1Orig)
-
-# CSIe1Orig = CSIb1Orig.copy()
-
-# a10rig_mean = np.mean(CSIa1Orig)
-
-# for i in range(int(len(CSIb1Orig) / 2), len(CSIb1Orig)):
-#     CSIa1Orig[i] = a10rig_mean
-#     CSIb1Orig[i] = a10rig_mean
-
-# for i in range(len(CSIb1Orig)):
-#     CSIe1Orig[i] = a10rig_mean
-#
-dataLen = len(CSIa1Orig)  # 6745
+dataLen = len(CSIa1Orig)
 
 CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=dataLen)
 
@@ -238,14 +210,14 @@ noiseSum = 0
 codings = ""
 # for ii in range(0, 5):
 
-del_file('./figures/')
+# del_file('./figures/')
 
 for staInd in range(0, 10 * intvl + 1, intvl):
     endInd = staInd + keyLen * intvl
     print("range:", staInd, endInd)
 
-    if not os.path.exists('./figures/' + str(staInd)):
-        os.mkdir('./figures/' + str(staInd))
+    # if not os.path.exists('./figures/' + str(staInd)):
+    #     os.mkdir('./figures/' + str(staInd))
 
     if endInd > len(CSIa1Orig):
         break
@@ -370,80 +342,6 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     sortNoise = sortNoiseSplit
     sortASend = sortASendSplit
 
-    # sortCSIa1 = sortCSIa1.reshape(int(len(sortCSIa1) / step / 2), step, 2)
-    # sortCSIb1 = sortCSIb1.reshape(int(len(sortCSIb1) / step / 2), step, 2)
-    # sortCSIe1 = sortCSIe1.reshape(int(len(sortCSIe1) / step / 2), step, 2)
-    # sortNoise = sortNoise.reshape(int(len(sortNoise) / step / 2), step, 2)
-    # sortASend = sortASend.reshape(int(len(sortASend) / step / 2), step, 2)
-
-    # # 向量旋转
-    # for i in range(len(sortASend)):
-    #     minx = 0
-    #     miny = 0
-    #     angle = random.uniform(0, math.pi / 2)
-    #     for j in range(len(sortASend[i])):
-    #         x = sortASend[i][j][0]
-    #         y = sortASend[i][j][1]
-    #         sortASend[i][j][0] = x * math.cos(angle) - y * math.sin(angle)
-    #         sortASend[i][j][1] = x * math.sin(angle) + y * math.cos(angle)
-    #         minx = min(minx, sortASend[i][j][0])
-    #         miny = min(miny, sortASend[i][j][1])
-    #     for j in range(len(sortASend[i])):
-    #         sortASend[i][j][0] -= minx
-    #         sortASend[i][j][1] -= miny
-
-    # 计算hd距离和多边形的顺序无关，可以任意洗牌
-    # CSIa1Back = [[] for _ in range(len(sortCSIa1))]
-    # CSIb1Back = [[] for _ in range(len(sortCSIb1))]
-    # CSIe1Back = [[] for _ in range(len(sortCSIe1))]
-    # CSIn1Back = [[] for _ in range(len(sortNoise))]
-    # ASendBack = [[] for _ in range(len(sortASend))]
-
-    # 随机打乱
-    # random.shuffle(sortCSIa1)
-    # random.shuffle(sortCSIb1)
-    # random.shuffle(sortCSIe1)
-    # random.shuffle(sortNoise)
-
-    # rand_out_polygon = list(range(len(sortCSIa1)))
-    # rand_in_polygon = list(range(step))
-
-    # random.shuffle(rand_out_polygon)
-    # random.shuffle(rand_in_polygon)
-    # for i in range(len(sortCSIa1)):
-    #     for j in range(step):
-    #         CSIa1Back[i].append(sortCSIa1[rand_out_polygon[i]][rand_in_polygon[j]])
-
-    # random.shuffle(rand_out_polygon)
-    # random.shuffle(rand_in_polygon)
-    # for i in range(len(sortCSIb1)):
-    #     for j in range(step):
-    #         CSIb1Back[i].append(sortCSIb1[rand_out_polygon[i]][rand_in_polygon[j]])
-
-    # random.shuffle(rand_out_polygon)
-    # random.shuffle(rand_in_polygon)
-    # for i in range(len(sortCSIe1)):
-    #     for j in range(step):
-    #         CSIe1Back[i].append(sortCSIe1[rand_out_polygon[i]][rand_in_polygon[j]])
-
-    # random.shuffle(rand_out_polygon)
-    # random.shuffle(rand_in_polygon)
-    # for i in range(len(sortNoise)):
-    #     for j in range(step):
-    #         CSIn1Back[i].append(sortNoise[rand_out_polygon[i]][rand_in_polygon[j]])
-
-    # random.shuffle(rand_out_polygon)
-    # random.shuffle(rand_in_polygon)
-    # for i in range(len(sortASend)):
-    #     for j in range(step):
-    #         ASendBack[i].append(sortASend[rand_out_polygon[i]][rand_in_polygon[j]])
-
-    # 平移
-    # for i in range(len(ASendBack)):
-    #     for j in range(len(ASendBack[i])):
-    #         ASendBack[i][j][0] = CSIa1Back[i][j][0] * 1.5 + 0.3
-    #         ASendBack[i][j][1] = CSIa1Back[i][j][1] * 1.5 + 0.3
-
     CSIa1Back = sortCSIa1
     CSIb1Back = sortCSIb1
     CSIe1Back = sortCSIe1
@@ -510,54 +408,54 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     e_list = []
     n_list = []
 
-    for i in range(0, int(len(sortCSIa1Add) / 5)):
-        xa1, ya1 = zip(*sortCSIa1Add[5 * i])
-        xa2, ya2 = zip(*sortCSIa1Add[5 * i + 1])
-        xa3, ya3 = zip(*sortCSIa1Add[5 * i + 2])
-        xa4, ya4 = zip(*sortCSIa1Add[5 * i + 3])
-        xa5, ya5 = zip(*sortCSIa1Add[5 * i + 4])
-        plt.figure()
-        plt.plot(xa1, ya1, label="a" + str(5 * i) + '-' + str(len(xa1) - 1) + 'polygon')
-        plt.plot(xa2, ya2, label="a" + str(5 * i + 1) + '-' + str(len(xa2) - 1) + 'polygon')
-        plt.plot(xa3, ya3, label="a" + str(5 * i + 2) + '-' + str(len(xa3) - 1) + 'polygon')
-        plt.plot(xa4, ya4, label="a" + str(5 * i + 3) + '-' + str(len(xa4) - 1) + 'polygon')
-        plt.plot(xa5, ya5, label="a" + str(5 * i + 4) + '-' + str(len(xa5) - 1) + 'polygon')
-        plt.legend(loc='lower left')
-        plt.savefig('./figures/' + str(staInd) + '/' + 'a-polygon' + str(i) + '.png')
-        plt.close()
+    # for i in range(0, int(len(sortCSIa1Add) / 5)):
+    #     xa1, ya1 = zip(*sortCSIa1Add[5 * i])
+    #     xa2, ya2 = zip(*sortCSIa1Add[5 * i + 1])
+    #     xa3, ya3 = zip(*sortCSIa1Add[5 * i + 2])
+    #     xa4, ya4 = zip(*sortCSIa1Add[5 * i + 3])
+    #     xa5, ya5 = zip(*sortCSIa1Add[5 * i + 4])
+    #     plt.figure()
+    #     plt.plot(xa1, ya1, label="a" + str(5 * i) + '-' + str(len(xa1) - 1) + 'polygon')
+    #     plt.plot(xa2, ya2, label="a" + str(5 * i + 1) + '-' + str(len(xa2) - 1) + 'polygon')
+    #     plt.plot(xa3, ya3, label="a" + str(5 * i + 2) + '-' + str(len(xa3) - 1) + 'polygon')
+    #     plt.plot(xa4, ya4, label="a" + str(5 * i + 3) + '-' + str(len(xa4) - 1) + 'polygon')
+    #     plt.plot(xa5, ya5, label="a" + str(5 * i + 4) + '-' + str(len(xa5) - 1) + 'polygon')
+    #     plt.legend(loc='lower left')
+    #     plt.savefig('./figures/' + str(staInd) + '/' + 'a-polygon' + str(i) + '.png')
+    #     plt.close()
 
-    for i in range(0, int(len(sortCSIb1Add) / 5)):
-        xb1, yb1 = zip(*sortCSIb1Add[5 * i])
-        xb2, yb2 = zip(*sortCSIb1Add[5 * i + 1])
-        xb3, yb3 = zip(*sortCSIb1Add[5 * i + 2])
-        xb4, yb4 = zip(*sortCSIb1Add[5 * i + 3])
-        xb5, yb5 = zip(*sortCSIb1Add[5 * i + 4])
-        plt.figure()
-        plt.plot(xb1, yb1, label="b" + str(5 * i) + '-' + str(len(xb1) - 1) + 'polygon')
-        plt.plot(xb2, yb2, label="b" + str(5 * i + 1) + '-' + str(len(xb2) - 1) + 'polygon')
-        plt.plot(xb3, yb3, label="b" + str(5 * i + 2) + '-' + str(len(xb3) - 1) + 'polygon')
-        plt.plot(xb4, yb4, label="b" + str(5 * i + 3) + '-' + str(len(xb4) - 1) + 'polygon')
-        plt.plot(xb5, yb5, label="b" + str(5 * i + 4) + '-' + str(len(xb5) - 1) + 'polygon')
-        plt.legend(loc='lower left')
-        plt.savefig('./figures/' + str(staInd) + '/' + 'b-polygon' + str(i) + '.png')
-        plt.close()
+    # for i in range(0, int(len(sortCSIb1Add) / 5)):
+    #     xb1, yb1 = zip(*sortCSIb1Add[5 * i])
+    #     xb2, yb2 = zip(*sortCSIb1Add[5 * i + 1])
+    #     xb3, yb3 = zip(*sortCSIb1Add[5 * i + 2])
+    #     xb4, yb4 = zip(*sortCSIb1Add[5 * i + 3])
+    #     xb5, yb5 = zip(*sortCSIb1Add[5 * i + 4])
+    #     plt.figure()
+    #     plt.plot(xb1, yb1, label="b" + str(5 * i) + '-' + str(len(xb1) - 1) + 'polygon')
+    #     plt.plot(xb2, yb2, label="b" + str(5 * i + 1) + '-' + str(len(xb2) - 1) + 'polygon')
+    #     plt.plot(xb3, yb3, label="b" + str(5 * i + 2) + '-' + str(len(xb3) - 1) + 'polygon')
+    #     plt.plot(xb4, yb4, label="b" + str(5 * i + 3) + '-' + str(len(xb4) - 1) + 'polygon')
+    #     plt.plot(xb5, yb5, label="b" + str(5 * i + 4) + '-' + str(len(xb5) - 1) + 'polygon')
+    #     plt.legend(loc='lower left')
+    #     plt.savefig('./figures/' + str(staInd) + '/' + 'b-polygon' + str(i) + '.png')
+    #     plt.close()
 
-    for i in range(len(sortASendAdd)):
-        xs, ys = zip(*sortASendAdd[i])
-        xa, ya = zip(*sortCSIa1Add[i])
-        xb, yb = zip(*sortCSIb1Add[i])
-        xe, ye = zip(*sortCSIe1Add[i])
-        xn, yn = zip(*sortCSIn1Add[i])
-        plt.figure()
-        plt.plot(xs, ys, color="green", linewidth=2.5, label="s" + str(i))
-        plt.plot(xa, ya, color="red", linewidth=2.5, label="a" + str(i))
-        plt.plot(xb, yb, color="blue", linewidth=2.5, label="b" + str(i))
-        plt.plot(xe, ye, color="black", linewidth=2.5, label="e" + str(i))
-        # plt.plot(xn, yn, color="yellow", linewidth=2.5, label="n") # 数量级差别太大，不方便显示
-        plt.legend(loc='upper left')
-        plt.savefig('./figures/' + str(staInd) + '/' + str(i) + '.png')
-        plt.close()
-        # plt.show()
+    # for i in range(len(sortASendAdd)):
+    #     xs, ys = zip(*sortASendAdd[i])
+    #     xa, ya = zip(*sortCSIa1Add[i])
+    #     xb, yb = zip(*sortCSIb1Add[i])
+    #     xe, ye = zip(*sortCSIe1Add[i])
+    #     xn, yn = zip(*sortCSIn1Add[i])
+    #     plt.figure()
+    #     plt.plot(xs, ys, color="green", linewidth=2.5, label="s" + str(i))
+    #     plt.plot(xa, ya, color="red", linewidth=2.5, label="a" + str(i))
+    #     plt.plot(xb, yb, color="blue", linewidth=2.5, label="b" + str(i))
+    #     plt.plot(xe, ye, color="black", linewidth=2.5, label="e" + str(i))
+    #     # plt.plot(xn, yn, color="yellow", linewidth=2.5, label="n") # 数量级差别太大，不方便显示
+    #     plt.legend(loc='upper left')
+    #     plt.savefig('./figures/' + str(staInd) + '/' + str(i) + '.png')
+    #     plt.close()
+    #     # plt.show()
 
     all_aa_hd = []
     for i in range(len(ASendBack)):
@@ -646,22 +544,22 @@ for staInd in range(0, 10 * intvl + 1, intvl):
         ae_max = max(ae_max, ae_hd)
         an_max = max(an_max, an_hd)
 
-        # 绘图
-        xs, ys = zip(*sortASendAdd[i])
-        xa, ya = zip(*sortCSIa1Add[aa_index])
-        xb, yb = zip(*sortCSIb1Add[ab_index])
-        xe, ye = zip(*sortCSIe1Add[ae_index])
-        xn, yn = zip(*sortCSIn1Add[an_index])
-        plt.figure()
-        plt.plot(xs, ys, color="green", linewidth=2.5, label="s")
-        plt.plot(xa, ya, color="red", linewidth=2.5, label="a")
-        plt.plot(xb, yb, color="blue", linewidth=2.5, label="b")
-        plt.plot(xe, ye, color="black", linewidth=2.5, label="e")
-        # plt.plot(xn, yn, color="yellow", linewidth=2.5, label="n") # 数量级差别太大，不方便显示
-        plt.legend(loc='upper left')
-        plt.savefig('./figures/' + str(staInd) + '/sabe' + str(i) + '.png')
-        plt.close()
-        # plt.show()
+        # # 绘图
+        # xs, ys = zip(*sortASendAdd[i])
+        # xa, ya = zip(*sortCSIa1Add[aa_index])
+        # xb, yb = zip(*sortCSIb1Add[ab_index])
+        # xe, ye = zip(*sortCSIe1Add[ae_index])
+        # xn, yn = zip(*sortCSIn1Add[an_index])
+        # plt.figure()
+        # plt.plot(xs, ys, color="green", linewidth=2.5, label="s")
+        # plt.plot(xa, ya, color="red", linewidth=2.5, label="a")
+        # plt.plot(xb, yb, color="blue", linewidth=2.5, label="b")
+        # plt.plot(xe, ye, color="black", linewidth=2.5, label="e")
+        # # plt.plot(xn, yn, color="yellow", linewidth=2.5, label="n") # 数量级差别太大，不方便显示
+        # plt.legend(loc='upper left')
+        # plt.savefig('./figures/' + str(staInd) + '/sabe' + str(i) + '.png')
+        # plt.close()
+        # # plt.show()
 
         # plt.figure()
         # plt.plot(xs, ys, color="green", linewidth=2.5, label="s")
@@ -706,21 +604,6 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     correctSum += sum2
     randomSum += sum3
     noiseSum += sum4
-
-    # 编码密钥
-    # char_weights = []
-    # weights = Counter(a_list)  # 得到list中元素出现次数
-    # for i in range(len(a_list)):
-    #     char_weights.append((a_list[i], weights[a_list[i]]))
-    # tree = HuffmanTree(char_weights)
-    # tree.get_code()
-    # HuffmanTree.codings += "\n"
-
-    for i in range(len(a_list)):
-        codings += bin(a_list[i])[2:] + "\n"
-
-with open('../edit_distance/evaluations/key.txt', 'a', ) as f:
-    f.write(codings)
 
 print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)
 print("a-e all", randomSum, "/", originSum, "=", randomSum / originSum)

@@ -12,13 +12,6 @@ from scipy.fft import dct
 from scipy.io import loadmat
 
 
-def search(data, p):
-    for i in range(len(data)):
-        if p == data[i]:
-            return i
-    return len(data)
-
-
 def smooth(x, window_len=11, window='hanning'):
     # ndim返回数组的维度
     if x.ndim != 1:
@@ -114,15 +107,6 @@ def toOneDim(list):
             # tmp += (list[i][j][0] * list[i][j][1])
         oneDim.append(round(tmp, 8))
     return oneDim
-
-
-# 数组第二维的所有内容求和
-def sumEachDim(list, index):
-    res = 0
-    for i in range(len(list[index])):
-        res += (list[index][i][0] + list[index][i][1])
-        # res += (list[index][i][0] * list[index][i][1])
-    return round(res, 8)
 
 
 fileName = ["../data/data_mobile_indoor_1.mat",
@@ -368,10 +352,6 @@ for f in fileName:
         for i in range(len(tmpCSIa1Reshape)):
             for j in range(step):
                 CSIa1Back[i].append(tmpCSIa1Reshape[rand_out_polygon[i]][rand_in_polygon[j]])
-
-        # CSIa1Back = np.random.normal(np.mean(CSIa1Back), np.std(CSIa1Back), (len(tmpCSIa1Reshape), step, 2))
-        # CSIa1Back = np.random.randint(np.min(CSIa1Back), np.max(CSIa1Back), (len(tmpCSIa1Reshape), step, 2))
-        # CSIa1Back += np.random.normal(0, 1, (len(tmpCSIa1Reshape), step, 2))
 
         # 在数组a后面加上a[0]使之成为一个首尾封闭的多边形
         sortCSIa1Add = makePolygon(tmpCSIa1Reshape)

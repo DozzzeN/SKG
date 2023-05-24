@@ -185,35 +185,7 @@ rawData = loadmat('../data/data_mobile_indoor_1.mat')
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 
-# rawData = loadmat('../data/data_static_indoor_1.mat')
-#
-# CSIa1OrigRaw = rawData['A'][:, 0]
-# CSIb1OrigRaw = rawData['A'][:, 1]
-#
-# CSIa1Orig = []
-# CSIb1Orig = []
-# for i in range(2000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i])
-#     CSIb1Orig.append(CSIb1OrigRaw[i])
-# for i in range(5000):
-#     CSIa1Orig.append(CSIa1OrigRaw[i + 20000])
-#     CSIb1Orig.append(CSIb1OrigRaw[i + 20000])
-#
-# CSIa1Orig = np.array(CSIa1Orig)
-# CSIb1Orig = np.array(CSIb1Orig)
-
-# CSIe1Orig = CSIb1Orig.copy()
-
-# a10rig_mean = np.mean(CSIa1Orig)
-
-# for i in range(int(len(CSIb1Orig) / 2), len(CSIb1Orig)):
-#     CSIa1Orig[i] = a10rig_mean
-#     CSIb1Orig[i] = a10rig_mean
-
-# for i in range(len(CSIb1Orig)):
-#     CSIe1Orig[i] = a10rig_mean
-#
-dataLen = len(CSIa1Orig)  # 6745
+dataLen = len(CSIa1Orig)
 
 CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=dataLen)
 
@@ -867,21 +839,6 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     randomSum += sum3
     noiseSum += sum4
     beforeSum += sum5
-
-    # 编码密钥
-    # char_weights = []
-    # weights = Counter(a_list)  # 得到list中元素出现次数
-    # for i in range(len(a_list)):
-    #     char_weights.append((a_list[i], weights[a_list[i]]))
-    # tree = HuffmanTree(char_weights)
-    # tree.get_code()
-    # HuffmanTree.codings += "\n"
-
-    for i in range(len(a_list)):
-        codings += bin(a_list[i])[2:] + "\n"
-
-with open('../edit_distance/evaluations/key.txt', 'a', ) as f:
-    f.write(codings)
 
 print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)
 print("a-e all", randomSum, "/", originSum, "=", randomSum / originSum)
