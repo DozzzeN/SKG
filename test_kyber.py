@@ -19,12 +19,16 @@ def get_uv(A, B, M, q):
     u = 0
     v = 0
     sample = random.sample(range(nvals - 1), nvals // 4)
+    r = np.random.randint(1, 3)
+    e1 = list(np.random.randint(1, 3, len(A)))
+    e2 = list(np.random.randint(1, 3, len(B)))
+    uu = list(A) * r + e1
+    vv = list(B) * r + e2
     print("sample", sample)
     for x in range(0, len(sample)):
-        #		print "[",A[sample[x]],B[sample[x]],"]",
-        u = u + (A[sample[x]])
+        u = u + (uu[sample[x]])
 
-        v = v + B[sample[x]]
+        v = v + vv[sample[x]]
 
     v = v + math.floor(q / 2) * M
     return u % q, v % q
@@ -111,3 +115,25 @@ print("Result bit0 is", get_result(u1_1, v1_1, u1_2, v1_2, q), dec(u1_1, v1_1, q
 print("Result bit1 is", get_result(u2_1, v2_1, u2_2, v2_2, q), dec(u2_1, v2_1, q), dec(u2_2, v2_2, q), dec(u2_12, v2_12, q))
 print("Result bit2 is", get_result(u3_1, v3_1, u3_2, v3_2, q), dec(u3_1, v3_1, q), dec(u3_2, v3_2, q), dec(u3_12, v3_12, q))
 print("Result bit3 is", get_result(u4_1, v4_1, u4_2, v4_2, q), dec(u4_1, v4_1, q), dec(u4_2, v4_2, q), dec(u4_12, v4_12, q))
+
+# print("\n------Key Exchange           -----------------")
+# e1 = []
+# e2 = []
+# A1 = []
+# A2 = []
+#
+# s1 = 20
+# s2 = 13
+#
+# k1 = []
+# k2 = []
+#
+# for x in range(0, len(A)):
+#     e1.append(random.randint(1, 3))
+#     e2.append(random.randint(1, 3))
+#     A1.append((A[x] * s1 + e1[x]) % q)
+#     A2.append((A[x] * s2 + e2[x]) % q)
+#     k1.append((A2[x] * s1) % q)
+#     k2.append((A1[x] * s2) % q)
+# print(k1)
+# print(k2)
