@@ -181,41 +181,41 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		0.7068 		0.0 		 1.6 		 1.1309 	 sort the value
 # si1 		0.7278 		0.0 		 1.6 		 1.1645 	 sort the value
 
-# 样本排序，无噪音，用index做匹配，安全性差
+# 样本排序，无噪音，用index做匹配，安全性差（无意义，都是1到128）
 # mi1 		0.9532 		0.0 		 1.6 		 1.5252		 sort the value
 # mo1 		0.9939 		0.0 		 1.6 		 1.5903		 sort the value
 # so1 		0.9092 		0.0 		 1.6 		 1.4547		 sort the value
 # si1 		0.9091 		0.0 		 1.6 		 1.4545		 sort the value
 
 ###############################################################################################
-# 样本排序，无噪音，用index做匹配，安全性好
+# 样本索引，无噪音，用index做匹配，安全性好
 # mi1       0.7888      0.0          1.6         1.262       index
 # mo1       0.7209      0.0          1.6         1.1534      index
 # so1       0.7179      0.0          1.6         1.1487      index
 # si1       0.7512      0.0          1.6         1.202       index
 
-# 样本排序，乘一次噪音，用value做匹配，安全性好
+# 样本索引，乘一次噪音，用value做匹配，安全性好
 # mi1 		0.9994      0.8667       1.6 		 1.599       index, add noise
 # mo1 		1.0         1.0          1.6 		 1.6         index, add noise
 # so1 		0.9988      0.7647       1.6 		 1.5981      index, add noise
 # si1 		0.9997      0.9444       1.6 		 1.5996      index, add noise
 
-# 样本排序，乘一次噪音，用index做匹配，安全性好
+# 样本索引，乘一次噪音，用index做匹配，安全性好
 # mi1 		0.9993 		0.8667 		 1.6 		 1.5989 	 index, add noise
 # mo1 		0.9995 		0.8 		 1.6 		 1.5992 	 index, add noise
 # so1 		0.9995 		0.8824 		 1.6 		 1.5992 	 index, add noise
 # si1 		1.0 		0.9722 		 1.6 		 1.5999 	 index, add noise
 
-# 样本排序，乘两次噪音，用value做匹配，安全性差
-# 样本排序，乘两次噪音，用index做匹配，安全性差
+# 样本索引，乘两次噪音，用value做匹配，安全性差
+# 样本索引，乘两次噪音，用index做匹配，安全性差
 
-# 样本排序，求幂，用value做匹配，安全性好
+# 样本索引，求幂，用value做匹配，安全性好
 # mi1 		0.9994 		0.8 		 1.6 		 1.5991		 index, power and add noise
 # mo1 		0.9998 		0.8 		 1.6 		 1.5997		 index, power and add noise
 # so1 		0.9993 		0.8235 		 1.6 		 1.5989		 index, power and add noise
 # si1 		0.9996 		0.9306 		 1.6 		 1.5994		 index, power and add noise
 
-# 样本排序，求幂，用index做匹配，安全性好
+# 样本索引，求幂，用index做匹配，安全性好
 # mi1 		0.9998 		0.9333 		 1.6 		 1.5997      index, power and add noise
 # mo1 		0.9994 		0.8 		 1.6 		 1.5991      index, power and add noise
 # so1 		0.9994 		0.8235 		 1.6 		 1.599       index, power and add noise
@@ -259,7 +259,7 @@ for f in fileName:
 
     times = 0
     # no perturbation
-    withoutSort = False
+    withoutSort = True
     addNoise = "mul"
     operationMode = ""
     if withoutSort:
@@ -390,11 +390,11 @@ for f in fileName:
             # tmpCSIe1 = np.matmul(np.power(np.sort(tmpCSIe1), powerMatrix), randomMatrix)
             # tmpCSIe2 = np.matmul(np.power(np.sort(tmpCSIe2), powerMatrix), randomMatrix)
 
-            # operationMode = "sort the value"
-            # tmpCSIa1 = np.sort(tmpCSIa1)
-            # tmpCSIb1 = np.sort(tmpCSIb1)
-            # tmpCSIe1 = np.sort(tmpCSIe1)
-            # tmpCSIe2 = np.sort(tmpCSIe2)
+            operationMode = "sort the value"
+            tmpCSIa1 = np.sort(tmpCSIa1)
+            tmpCSIb1 = np.sort(tmpCSIb1)
+            tmpCSIe1 = np.sort(tmpCSIe1)
+            tmpCSIe2 = np.sort(tmpCSIe2)
 
             ##############################################################################
 
@@ -416,12 +416,12 @@ for f in fileName:
             # tmpCSIe1 = np.matmul(np.matmul(np.array(tmpCSIe1).argsort().argsort(), randomMatrix), randomMatrix)
             # tmpCSIe2 = np.matmul(np.matmul(np.array(tmpCSIe2).argsort().argsort(), randomMatrix), randomMatrix)
 
-            operationMode = "index, power and add noise"
-            powerMatrix = np.random.randint(0, 2, size=keyLen)
-            tmpCSIa1 = np.matmul(np.power(np.array(tmpCSIa1).argsort().argsort(), powerMatrix), randomMatrix)
-            tmpCSIb1 = np.matmul(np.power(np.array(tmpCSIb1).argsort().argsort(), powerMatrix), randomMatrix)
-            tmpCSIe1 = np.matmul(np.power(np.array(tmpCSIe1).argsort().argsort(), powerMatrix), randomMatrix)
-            tmpCSIe2 = np.matmul(np.power(np.array(tmpCSIe2).argsort().argsort(), powerMatrix), randomMatrix)
+            # operationMode = "index, power and add noise"
+            # powerMatrix = np.random.randint(0, 2, size=keyLen)
+            # tmpCSIa1 = np.matmul(np.power(np.array(tmpCSIa1).argsort().argsort(), powerMatrix), randomMatrix)
+            # tmpCSIb1 = np.matmul(np.power(np.array(tmpCSIb1).argsort().argsort(), powerMatrix), randomMatrix)
+            # tmpCSIe1 = np.matmul(np.power(np.array(tmpCSIe1).argsort().argsort(), powerMatrix), randomMatrix)
+            # tmpCSIe2 = np.matmul(np.power(np.array(tmpCSIe2).argsort().argsort(), powerMatrix), randomMatrix)
 
             # inference attack
             tmpNoise1 = np.matmul(np.ones(keyLen), randomMatrix)  # 按列求均值

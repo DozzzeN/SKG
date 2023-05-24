@@ -23,6 +23,7 @@ def search(data, p):
     for i in range(len(data)):
         if p == data[i]:
             return i
+    return len(data)
 
 
 # 定义计算离散点积分的函数
@@ -185,7 +186,7 @@ def genCoordinate(list):
 def listToHilbertCurveIndexWithFixedParams(list, p, grid_size):
     list = np.array(list) - np.min(list, axis=0)
     points = np.array(list / grid_size).astype(int)
-    # print(points)
+    points = np.mod(points, 2 ** p)
 
     n = 2
     hilbert_curve = HilbertCurve(p, n)
@@ -223,17 +224,23 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		0.7068 		0.0 		 1.6 		 1.1309 	 sort the value
 # si1 		0.7278 		0.0 		 1.6 		 1.1645 	 sort the value
 
-# 样本排序，无噪音，用index做匹配，安全性差
-# mi1 		0.9532 		0.0 		 1.6 		 1.5252		 sort the value
-# mo1 		0.9939 		0.0 		 1.6 		 1.5903		 sort the value
-# so1 		0.9092 		0.0 		 1.6 		 1.4547		 sort the value
-# si1 		0.9091 		0.0 		 1.6 		 1.4545		 sort the value
-
 # 样本排序，无噪音，用index做匹配，安全性好
 # mi1       0.7888      0.0          1.6         1.262       index
 # mo1       0.7209      0.0          1.6         1.1534      index
 # so1       0.7179      0.0          1.6         1.1487      index
 # si1       0.7512      0.0          1.6         1.202       index
+
+# 希尔伯特曲线映射，无噪音，用value做匹配，安全性好
+# mi1 		0.7616 		 0.0 		 0.7 		 0.5331 	 hilbert and value
+# mo1 		0.6951 		 0.0 		 0.7 		 0.4866 	 hilbert and value
+# so1 		0.706 		 0.0 		 0.7 		 0.4942 	 hilbert and value
+# si1 		0.7288 		 0.0 		 0.7 		 0.5102 	 hilbert and value
+
+# 希尔伯特曲线映射，无噪音，用index做匹配，安全性好
+# mi1 		0.7776 		0.0 		 0.7 		 0.5443 	 hilbert and index
+# mo1 		0.7391 		0.0 		 0.7 		 0.5173 	 hilbert and index
+# so1 		0.7212 		0.0 		 0.7 		 0.5048 	 hilbert and index
+# si1 		0.7374 		0.0 		 0.7 		 0.5162 	 hilbert and index
 
 isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
@@ -245,7 +252,7 @@ for f in fileName:
 
     dataLen = len(CSIa1Orig)
 
-    segLen = 8
+    segLen = 5
     keyLen = 256 * segLen
 
     originSum = 0
@@ -440,15 +447,15 @@ for f in fileName:
             tmpCSIn2Ind = np.array(tmpNoise2).argsort().argsort()
             tmpCSIn3Ind = np.array(tmpNoise3).argsort().argsort()
 
-        # 取原数据的一部分来reshape
-        shuffling = np.random.permutation(range(keyLen))
-        tmpCSIa1Ind = np.append(tmpCSIa1Ind, tmpCSIa1Ind[shuffling])
-        tmpCSIb1Ind = np.append(tmpCSIb1Ind, tmpCSIb1Ind[shuffling])
-        tmpCSIe1Ind = np.append(tmpCSIe1Ind, tmpCSIe1Ind[shuffling])
-        tmpCSIe2Ind = np.append(tmpCSIe2Ind, tmpCSIe2Ind[shuffling])
-        tmpCSIn1Ind = np.append(tmpCSIn1Ind, tmpCSIn1Ind[shuffling])
-        tmpCSIn2Ind = np.append(tmpCSIn2Ind, tmpCSIn2Ind[shuffling])
-        tmpCSIn3Ind = np.append(tmpCSIn3Ind, tmpCSIn3Ind[shuffling])
+        # # 取原数据的一部分来reshape
+        # shuffling = np.random.permutation(range(keyLen))
+        # tmpCSIa1Ind = np.append(tmpCSIa1Ind, tmpCSIa1Ind[shuffling])
+        # tmpCSIb1Ind = np.append(tmpCSIb1Ind, tmpCSIb1Ind[shuffling])
+        # tmpCSIe1Ind = np.append(tmpCSIe1Ind, tmpCSIe1Ind[shuffling])
+        # tmpCSIe2Ind = np.append(tmpCSIe2Ind, tmpCSIe2Ind[shuffling])
+        # tmpCSIn1Ind = np.append(tmpCSIn1Ind, tmpCSIn1Ind[shuffling])
+        # tmpCSIn2Ind = np.append(tmpCSIn2Ind, tmpCSIn2Ind[shuffling])
+        # tmpCSIn3Ind = np.append(tmpCSIn3Ind, tmpCSIn3Ind[shuffling])
 
         projCSIa1XY = tmpCSIa1Ind.reshape(int(len(tmpCSIa1Ind) / 2), 2)
         projCSIb1XY = tmpCSIb1Ind.reshape(int(len(tmpCSIb1Ind) / 2), 2)
@@ -466,41 +473,43 @@ for f in fileName:
         tmpCSIn2Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIn2XY, hilbert_p, grid_size))
         tmpCSIn3Ind = list(listToHilbertCurveIndexWithFixedParams(projCSIn3XY, hilbert_p, grid_size))
 
-        tmpCSIa1Ind = np.array(tmpCSIa1Ind).argsort().argsort()
-        tmpCSIb1Ind = np.array(tmpCSIb1Ind).argsort().argsort()
-        tmpCSIe1Ind = np.array(tmpCSIe1Ind).argsort().argsort()
-        tmpCSIe2Ind = np.array(tmpCSIe2Ind).argsort().argsort()
-        tmpCSIn1Ind = np.array(tmpCSIn1Ind).argsort().argsort()
-        tmpCSIn2Ind = np.array(tmpCSIn2Ind).argsort().argsort()
-        tmpCSIn3Ind = np.array(tmpCSIn3Ind).argsort().argsort()
+        # operationMode = "hilbert and index"
+        # tmpCSIa1Ind = np.array(tmpCSIa1Ind).argsort().argsort()
+        # tmpCSIb1Ind = np.array(tmpCSIb1Ind).argsort().argsort()
+        # tmpCSIe1Ind = np.array(tmpCSIe1Ind).argsort().argsort()
+        # tmpCSIe2Ind = np.array(tmpCSIe2Ind).argsort().argsort()
+        # tmpCSIn1Ind = np.array(tmpCSIn1Ind).argsort().argsort()
+        # tmpCSIn2Ind = np.array(tmpCSIn2Ind).argsort().argsort()
+        # tmpCSIn3Ind = np.array(tmpCSIn3Ind).argsort().argsort()
 
-        minEpiIndClosenessLsb = np.zeros(int(keyLen / segLen), dtype=int)
-        minEpiIndClosenessLse1 = np.zeros(int(keyLen / segLen), dtype=int)
-        minEpiIndClosenessLse2 = np.zeros(int(keyLen / segLen), dtype=int)
-        minEpiIndClosenessLsn1 = np.zeros(int(keyLen / segLen), dtype=int)
-        minEpiIndClosenessLsn2 = np.zeros(int(keyLen / segLen), dtype=int)
-        minEpiIndClosenessLsn3 = np.zeros(int(keyLen / segLen), dtype=int)
+        operationMode = "hilbert and value"
+        minEpiIndClosenessLsb = np.zeros(int(len(tmpCSIa1Ind) / segLen), dtype=int)
+        minEpiIndClosenessLse1 = np.zeros(int(len(tmpCSIa1Ind) / segLen), dtype=int)
+        minEpiIndClosenessLse2 = np.zeros(int(len(tmpCSIa1Ind) / segLen), dtype=int)
+        minEpiIndClosenessLsn1 = np.zeros(int(len(tmpCSIa1Ind) / segLen), dtype=int)
+        minEpiIndClosenessLsn2 = np.zeros(int(len(tmpCSIa1Ind) / segLen), dtype=int)
+        minEpiIndClosenessLsn3 = np.zeros(int(len(tmpCSIa1Ind) / segLen), dtype=int)
 
-        tmpCSIa1IndReshape = np.array(tmpCSIa1Ind).reshape(int(keyLen / segLen), segLen)
+        tmpCSIa1IndReshape = np.array(tmpCSIa1Ind).reshape(int(len(tmpCSIa1Ind) / segLen), segLen)
 
-        permutation = list(range(int(keyLen / segLen)))
+        permutation = list(range(int(len(tmpCSIa1Ind) / segLen)))
         combineMetric = list(zip(tmpCSIa1IndReshape, permutation))
         np.random.seed(staInd)
         np.random.shuffle(combineMetric)
         tmpCSIa1IndReshape, permutation = zip(*combineMetric)
         tmpCSIa1Ind = np.hstack((tmpCSIa1IndReshape))
 
-        for i in range(int(keyLen / segLen)):
+        for i in range(int(len(tmpCSIa1Ind) / segLen)):
             epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
 
-            epiIndClosenessLsb = np.zeros(int(keyLen / segLen))
-            epiIndClosenessLse1 = np.zeros(int(keyLen / segLen))
-            epiIndClosenessLse2 = np.zeros(int(keyLen / segLen))
-            epiIndClosenessLsn1 = np.zeros(int(keyLen / segLen))
-            epiIndClosenessLsn2 = np.zeros(int(keyLen / segLen))
-            epiIndClosenessLsn3 = np.zeros(int(keyLen / segLen))
+            epiIndClosenessLsb = np.zeros(int(len(tmpCSIa1Ind) / segLen))
+            epiIndClosenessLse1 = np.zeros(int(len(tmpCSIa1Ind) / segLen))
+            epiIndClosenessLse2 = np.zeros(int(len(tmpCSIa1Ind) / segLen))
+            epiIndClosenessLsn1 = np.zeros(int(len(tmpCSIa1Ind) / segLen))
+            epiIndClosenessLsn2 = np.zeros(int(len(tmpCSIa1Ind) / segLen))
+            epiIndClosenessLsn3 = np.zeros(int(len(tmpCSIa1Ind) / segLen))
 
-            for j in range(int(keyLen / segLen)):
+            for j in range(int(len(tmpCSIa1Ind) / segLen)):
                 epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
                 epiInde1 = tmpCSIe1Ind[j * segLen: (j + 1) * segLen]
                 epiInde2 = tmpCSIe2Ind[j * segLen: (j + 1) * segLen]
@@ -522,7 +531,7 @@ for f in fileName:
             minEpiIndClosenessLsn2[i] = np.argmin(epiIndClosenessLsn2)
             minEpiIndClosenessLsn3[i] = np.argmin(epiIndClosenessLsn3)
 
-        # a_list_number = list(range(int(keyLen / segLen)))
+        # a_list_number = list(range(int(len(tmpCSIa1Ind) / segLen)))
         a_list_number = list(permutation)
         b_list_number = list(minEpiIndClosenessLsb)
         e1_list_number = list(minEpiIndClosenessLse1)
@@ -530,6 +539,15 @@ for f in fileName:
         n1_list_number = list(minEpiIndClosenessLsn1)
         n2_list_number = list(minEpiIndClosenessLsn2)
         n3_list_number = list(minEpiIndClosenessLsn3)
+
+        # put the hilbert distance as the key, without matching
+        # a_list_number = list(tmpCSIa1Ind)
+        # b_list_number = list(tmpCSIb1Ind)
+        # e1_list_number = list(tmpCSIe1Ind)
+        # e2_list_number = list(tmpCSIe2Ind)
+        # n1_list_number = list(tmpCSIn1Ind)
+        # n2_list_number = list(tmpCSIn2Ind)
+        # n3_list_number = list(tmpCSIn3Ind)
 
         # 转成二进制，0填充成0000
         for i in range(len(a_list_number)):
@@ -566,19 +584,19 @@ for f in fileName:
         for i in range(len(a_list) - len(n3_list)):
             n3_list += str(np.random.randint(0, 2))
 
-        # # print("keys of a:", len(a_list), a_list)
+        # print("keys of a:", len(a_list), a_list)
         # print("keys of a:", len(a_list_number), a_list_number)
-        # # print("keys of b:", len(b_list), b_list)
+        # print("keys of b:", len(b_list), b_list)
         # print("keys of b:", len(b_list_number), b_list_number)
-        # # print("keys of e:", len(e_list), e_list)
+        # print("keys of e:", len(e_list), e_list)
         # print("keys of e1:", len(e1_list_number), e1_list_number)
-        # # print("keys of e:", len(e_list), e_list)
+        # print("keys of e:", len(e_list), e_list)
         # print("keys of e2:", len(e2_list_number), e2_list_number)
-        # # print("keys of n1:", len(n1_list), n1_list)
+        # print("keys of n1:", len(n1_list), n1_list)
         # print("keys of n1:", len(n1_list_number), n1_list_number)
-        # # print("keys of n2:", len(n2_list), n2_list)
+        # print("keys of n2:", len(n2_list), n2_list)
         # print("keys of n2:", len(n2_list_number), n2_list_number)
-        # # print("keys of n3:", len(n3_list), n3_list)
+        # print("keys of n3:", len(n3_list), n3_list)
         # print("keys of n3:", len(n3_list_number), n3_list_number)
 
         sum1 = min(len(a_list), len(b_list))
@@ -607,42 +625,42 @@ for f in fileName:
             real_pos = search(a_list_number, b_list_number[i])
             guess_pos = i
             tmp_dist += abs(real_pos - guess_pos)
-        ab_dist += (tmp_dist / int(keyLen / segLen))
+        ab_dist += (tmp_dist / int(len(tmpCSIa1Ind) / segLen))
 
         tmp_dist = 0
         for i in range(len(e1_list_number)):
             real_pos = search(a_list_number, e1_list_number[i])
             guess_pos = i
             tmp_dist += abs(real_pos - guess_pos)
-        ae1_dist += (tmp_dist / int(keyLen / segLen))
+        ae1_dist += (tmp_dist / int(len(tmpCSIa1Ind) / segLen))
 
         tmp_dist = 0
         for i in range(len(e2_list_number)):
             real_pos = search(a_list_number, e2_list_number[i])
             guess_pos = i
             tmp_dist += abs(real_pos - guess_pos)
-        ae2_dist += (tmp_dist / int(keyLen / segLen))
+        ae2_dist += (tmp_dist / int(len(tmpCSIa1Ind) / segLen))
 
         tmp_dist = 0
         for i in range(len(n1_list_number)):
             real_pos = search(a_list_number, n1_list_number[i])
             guess_pos = i
             tmp_dist += abs(real_pos - guess_pos)
-        an1_dist += (tmp_dist / int(keyLen / segLen))
+        an1_dist += (tmp_dist / int(len(tmpCSIa1Ind) / segLen))
 
         tmp_dist = 0
         for i in range(len(n2_list_number)):
             real_pos = search(a_list_number, n2_list_number[i])
             guess_pos = i
             tmp_dist += abs(real_pos - guess_pos)
-        an2_dist += (tmp_dist / int(keyLen / segLen))
+        an2_dist += (tmp_dist / int(len(tmpCSIa1Ind) / segLen))
 
         tmp_dist = 0
         for i in range(len(n3_list_number)):
             real_pos = search(a_list_number, n3_list_number[i])
             guess_pos = i
             tmp_dist += abs(real_pos - guess_pos)
-        an3_dist += (tmp_dist / int(keyLen / segLen))
+        an3_dist += (tmp_dist / int(len(tmpCSIa1Ind) / segLen))
 
         # 计算相关系数
         ab_corr += 0 if np.isnan(pearsonr(a_list_number, b_list_number)[0]) else \
