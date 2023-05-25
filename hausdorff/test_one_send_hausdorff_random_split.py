@@ -195,10 +195,8 @@ CSIb1OrigBack = CSIb1Orig.copy()
 CSIe1OrigBack = CSIe1Orig.copy()
 
 noise = np.random.normal(loc=-1, scale=1, size=dataLen)  ## Multiplication item normal distribution
-noiseAdd = np.random.normal(loc=0, scale=10, size=dataLen)  ## Addition item normal distribution
 
-sft = 2
-intvl = 2 * sft + 1
+intvl = 7
 keyLen = 256
 addNoise = False
 
@@ -207,17 +205,9 @@ correctSum = 0
 randomSum = 0
 noiseSum = 0
 
-codings = ""
-# for ii in range(0, 5):
-
-# del_file('./figures/')
-
-for staInd in range(0, 10 * intvl + 1, intvl):
+for staInd in range(0, dataLen, keyLen * intvl):
     endInd = staInd + keyLen * intvl
     print("range:", staInd, endInd)
-
-    # if not os.path.exists('./figures/' + str(staInd)):
-    #     os.mkdir('./figures/' + str(staInd))
 
     if endInd > len(CSIa1Orig):
         break
@@ -231,7 +221,6 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     tmpCSIe1 = CSIe1Orig[range(staInd, endInd, 1)]
 
     tmpNoise = noise[range(staInd, endInd, 1)]
-    tmpNoiseAdd = noiseAdd[range(staInd, endInd, 1)]
 
     tmpCSIa1 = tmpCSIa1 - (np.mean(tmpCSIa1) - np.mean(tmpCSIb1))  # Mean value consistency
 
@@ -253,54 +242,18 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     CSIb1Orig[range(staInd, endInd, 1)] = tmpCSIb1
     CSIe1Orig[range(staInd, endInd, 1)] = tmpCSIe1
 
-    permLen = len(range(staInd, endInd, intvl))
-    origInd = np.array([xx for xx in range(staInd, endInd, intvl)])
+    sortCSIa1 = []
+    sortCSIb1 = []
+    sortCSIe1 = []
+    sortNoise = []
 
-    sortCSIa1 = np.zeros(permLen)
-    sortCSIb1 = np.zeros(permLen)
-    sortCSIe1 = np.zeros(permLen)
-    sortNoise = np.zeros(permLen)
-
-    for ii in range(permLen):
-        aIndVec = np.array([aa for aa in range(origInd[ii], origInd[ii] + intvl, 1)])  ## for non-permuted CSIa1
-
-        for jj in range(permLen, permLen * 2):
-            bIndVec = np.array([bb for bb in range(origInd[jj - permLen], origInd[jj - permLen] + intvl, 1)])
-
-            CSIa1Tmp = CSIa1Orig[aIndVec]
-            CSIb1Tmp = CSIb1Orig[bIndVec]
-            CSIe1Tmp = CSIe1Orig[bIndVec]
-            noiseTmp = noise[aIndVec]
-
-            sortCSIa1[ii] = np.mean(CSIa1Tmp)  ## Metric 1: Mean
-            sortCSIb1[jj - permLen] = np.mean(CSIb1Tmp)  # 只赋值一次
-            sortCSIe1[jj - permLen] = np.mean(CSIe1Tmp)
-            sortNoise[ii] = np.mean(noiseTmp)
-
-    _max = max(sortCSIa1)
-    _min = min(sortCSIa1)
-
-    # sortCSIa1 = sortCSIa1 / (_max - _min) - _min / (_max - _min)
-    # sortCSIb1 = sortCSIb1 / (_max - _min) - _min / (_max - _min)
-    # sortCSIe1 = sortCSIe1 / (_max - _min) - _min / (_max - _min)
-    # sortNoise = sortNoise / (_max - _min) - _min / (_max - _min)
-
-    # sortCSIa1是原始算法中排序前的数据
-    sortCSIa1 = np.log10(np.abs(sortCSIa1)) * 100
-    sortCSIb1 = np.log10(np.abs(sortCSIb1)) * 100
-    sortCSIe1 = np.log10(np.abs(sortCSIe1)) * 100
-    sortNoise = np.log10(np.abs(sortNoise)) * 100
-
-    # 准备A发送的数据
-    # copyCSIa1 = sortCSIa1.copy()
-    # random.shuffle(copyCSIa1)
-    # sortASend = np.array(copyCSIa1)
+    for i in range(keyLen):
+        sortCSIa1.append(sum(tmpCSIa1[i * intvl:(i + 1) * intvl]))
+        sortCSIb1.append(sum(tmpCSIb1[i * intvl:(i + 1) * intvl]))
+        sortCSIe1.append(sum(tmpCSIe1[i * intvl:(i + 1) * intvl]))
+        sortNoise.append(sum(tmpNoise[i * intvl:(i + 1) * intvl]))
 
     sortASend = np.random.normal(np.mean(sortCSIa1), np.std(sortCSIa1), len(sortCSIa1))
-
-    # sortASend = sortCSIa1.copy()
-
-    # sortASend = np.random.randint(0, np.log10(np.abs(_max-_min)), size=len(sortCSIa1))  # 随机分布
 
     # 形成三维数组，其中第三维是一对坐标值
     # 数组的长度随机生成
@@ -310,11 +263,11 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     sortCSIn1Copy = sortNoise.copy()
     sortASendCopy = sortASend.copy()
 
-    sortCSIa1Copy = sortCSIa1Copy.reshape(int(len(sortCSIa1) / 2), 2)
-    sortCSIb1Copy = sortCSIb1Copy.reshape(int(len(sortCSIb1) / 2), 2)
-    sortCSIe1Copy = sortCSIe1Copy.reshape(int(len(sortCSIe1) / 2), 2)
-    sortCSIn1Copy = sortCSIn1Copy.reshape(int(len(sortNoise) / 2), 2)
-    sortASendCopy = sortASendCopy.reshape(int(len(sortASend) / 2), 2)
+    sortCSIa1Copy = np.array(sortCSIa1Copy).reshape((int(len(sortCSIa1) / 2), 2))
+    sortCSIb1Copy = np.array(sortCSIb1Copy).reshape((int(len(sortCSIb1) / 2), 2))
+    sortCSIe1Copy = np.array(sortCSIe1Copy).reshape((int(len(sortCSIe1) / 2), 2))
+    sortCSIn1Copy = np.array(sortCSIn1Copy).reshape((int(len(sortNoise) / 2), 2))
+    sortASendCopy = np.array(sortASendCopy).reshape((int(len(sortASend) / 2), 2))
 
     sortCSIa1Split = []
     sortCSIb1Split = []
@@ -349,29 +302,29 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     ASendBack = sortASend
 
     # 凸包检查
-    for i in range(len(ASendBack)):
-        ASendBack[i] = list(Polygon(ASendBack[i]).convex_hull.exterior.coords)[0:-1]
-        CSIa1Back[i] = list(Polygon(CSIa1Back[i]).convex_hull.exterior.coords)[0:-1]
-        CSIb1Back[i] = list(Polygon(CSIb1Back[i]).convex_hull.exterior.coords)[0:-1]
-        CSIe1Back[i] = list(Polygon(CSIe1Back[i]).convex_hull.exterior.coords)[0:-1]
-        CSIn1Back[i] = list(Polygon(CSIn1Back[i]).convex_hull.exterior.coords)[0:-1]
+    # for i in range(len(ASendBack)):
+    #     ASendBack[i] = list(Polygon(ASendBack[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIa1Back[i] = list(Polygon(CSIa1Back[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIb1Back[i] = list(Polygon(CSIb1Back[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIe1Back[i] = list(Polygon(CSIe1Back[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIn1Back[i] = list(Polygon(CSIn1Back[i]).convex_hull.exterior.coords)[0:-1]
 
-    # ASend不能与CSIa1相交
-    for i in range(len(ASendBack)):
-        is_in = Polygon(ASendBack[i]).intersects(Polygon(sortCSIa1[i]))
-        while is_in is True:
-            for j in range(len(ASendBack[i])):
-                ASendBack[i][j] = [random.uniform(0, np.log10(np.abs(_max - _min))),
-                                   random.uniform(0, np.log10(np.abs(_max - _min)))]
-            is_in = Polygon(ASendBack[i]).intersects(Polygon(sortCSIa1[i]))
+    # # ASend不能与CSIa1相交
+    # for i in range(len(ASendBack)):
+    #     is_in = Polygon(ASendBack[i]).intersects(Polygon(sortCSIa1[i]))
+    #     while is_in is True:
+    #         for j in range(len(ASendBack[i])):
+    #             ASendBack[i][j] = [random.uniform(0, np.log10(np.abs(_max - _min))),
+    #                                random.uniform(0, np.log10(np.abs(_max - _min)))]
+    #         is_in = Polygon(ASendBack[i]).intersects(Polygon(sortCSIa1[i]))
 
-    # 凸包检查
-    for i in range(len(ASendBack)):
-        ASendBack[i] = list(Polygon(ASendBack[i]).convex_hull.exterior.coords)[0:-1]
-        CSIa1Back[i] = list(Polygon(CSIa1Back[i]).convex_hull.exterior.coords)[0:-1]
-        CSIb1Back[i] = list(Polygon(CSIb1Back[i]).convex_hull.exterior.coords)[0:-1]
-        CSIe1Back[i] = list(Polygon(CSIe1Back[i]).convex_hull.exterior.coords)[0:-1]
-        CSIn1Back[i] = list(Polygon(CSIn1Back[i]).convex_hull.exterior.coords)[0:-1]
+    # # 凸包检查
+    # for i in range(len(ASendBack)):
+    #     ASendBack[i] = list(Polygon(ASendBack[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIa1Back[i] = list(Polygon(CSIa1Back[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIb1Back[i] = list(Polygon(CSIb1Back[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIe1Back[i] = list(Polygon(CSIe1Back[i]).convex_hull.exterior.coords)[0:-1]
+    #     CSIn1Back[i] = list(Polygon(CSIn1Back[i]).convex_hull.exterior.coords)[0:-1]
 
     # 降维以用于后续的排序
     oneDimCSIa1 = toOneDim(CSIa1Back)
@@ -379,15 +332,6 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     oneDimCSIe1 = toOneDim(CSIe1Back)
     oneDimCSIn1 = toOneDim(CSIn1Back)
     oneDimASend = toOneDim(ASendBack)
-
-    # # ASend不能与CSIa1相交
-    # for i in range(len(sortASendAdd)):
-    #     for j in range(len(sortASendAdd[i])):
-    #         is_in = is_in_poly(sortASendAdd[i][j], sortCSIa1[i])
-    #         while is_in is True:
-    #             sortASendAdd[i][j] = [np.random.randint(0, np.mean(sortCSIa1)),
-    #                                   np.random.randint(0, np.mean(sortCSIa1))]
-    #             is_in = is_in_poly(sortASendAdd[i][j], sortCSIa1[i])
 
     # 在数组a后面加上a[0]使之成为一个首尾封闭的多边形
     sortCSIa1Add = makePolygon(CSIa1Back)
@@ -407,55 +351,6 @@ for staInd in range(0, 10 * intvl + 1, intvl):
     b_list = []
     e_list = []
     n_list = []
-
-    # for i in range(0, int(len(sortCSIa1Add) / 5)):
-    #     xa1, ya1 = zip(*sortCSIa1Add[5 * i])
-    #     xa2, ya2 = zip(*sortCSIa1Add[5 * i + 1])
-    #     xa3, ya3 = zip(*sortCSIa1Add[5 * i + 2])
-    #     xa4, ya4 = zip(*sortCSIa1Add[5 * i + 3])
-    #     xa5, ya5 = zip(*sortCSIa1Add[5 * i + 4])
-    #     plt.figure()
-    #     plt.plot(xa1, ya1, label="a" + str(5 * i) + '-' + str(len(xa1) - 1) + 'polygon')
-    #     plt.plot(xa2, ya2, label="a" + str(5 * i + 1) + '-' + str(len(xa2) - 1) + 'polygon')
-    #     plt.plot(xa3, ya3, label="a" + str(5 * i + 2) + '-' + str(len(xa3) - 1) + 'polygon')
-    #     plt.plot(xa4, ya4, label="a" + str(5 * i + 3) + '-' + str(len(xa4) - 1) + 'polygon')
-    #     plt.plot(xa5, ya5, label="a" + str(5 * i + 4) + '-' + str(len(xa5) - 1) + 'polygon')
-    #     plt.legend(loc='lower left')
-    #     plt.savefig('./figures/' + str(staInd) + '/' + 'a-polygon' + str(i) + '.png')
-    #     plt.close()
-
-    # for i in range(0, int(len(sortCSIb1Add) / 5)):
-    #     xb1, yb1 = zip(*sortCSIb1Add[5 * i])
-    #     xb2, yb2 = zip(*sortCSIb1Add[5 * i + 1])
-    #     xb3, yb3 = zip(*sortCSIb1Add[5 * i + 2])
-    #     xb4, yb4 = zip(*sortCSIb1Add[5 * i + 3])
-    #     xb5, yb5 = zip(*sortCSIb1Add[5 * i + 4])
-    #     plt.figure()
-    #     plt.plot(xb1, yb1, label="b" + str(5 * i) + '-' + str(len(xb1) - 1) + 'polygon')
-    #     plt.plot(xb2, yb2, label="b" + str(5 * i + 1) + '-' + str(len(xb2) - 1) + 'polygon')
-    #     plt.plot(xb3, yb3, label="b" + str(5 * i + 2) + '-' + str(len(xb3) - 1) + 'polygon')
-    #     plt.plot(xb4, yb4, label="b" + str(5 * i + 3) + '-' + str(len(xb4) - 1) + 'polygon')
-    #     plt.plot(xb5, yb5, label="b" + str(5 * i + 4) + '-' + str(len(xb5) - 1) + 'polygon')
-    #     plt.legend(loc='lower left')
-    #     plt.savefig('./figures/' + str(staInd) + '/' + 'b-polygon' + str(i) + '.png')
-    #     plt.close()
-
-    # for i in range(len(sortASendAdd)):
-    #     xs, ys = zip(*sortASendAdd[i])
-    #     xa, ya = zip(*sortCSIa1Add[i])
-    #     xb, yb = zip(*sortCSIb1Add[i])
-    #     xe, ye = zip(*sortCSIe1Add[i])
-    #     xn, yn = zip(*sortCSIn1Add[i])
-    #     plt.figure()
-    #     plt.plot(xs, ys, color="green", linewidth=2.5, label="s" + str(i))
-    #     plt.plot(xa, ya, color="red", linewidth=2.5, label="a" + str(i))
-    #     plt.plot(xb, yb, color="blue", linewidth=2.5, label="b" + str(i))
-    #     plt.plot(xe, ye, color="black", linewidth=2.5, label="e" + str(i))
-    #     # plt.plot(xn, yn, color="yellow", linewidth=2.5, label="n") # 数量级差别太大，不方便显示
-    #     plt.legend(loc='upper left')
-    #     plt.savefig('./figures/' + str(staInd) + '/' + str(i) + '.png')
-    #     plt.close()
-    #     # plt.show()
 
     all_aa_hd = []
     for i in range(len(ASendBack)):
@@ -491,52 +386,12 @@ for staInd in range(0, 10 * intvl + 1, intvl):
             if an_d < an_hd:
                 an_hd = an_d
                 an_index = j
-        if aa_index != ab_index:
-            print("not equal aa_index", aa_index, "aa_hd", aa_hd)
-            print("not equal ab_index", ab_index, "ab_hd", ab_hd)
-
-        if aa_index == ab_index:
-            print("equal aa_index", aa_index, "aa_hd", aa_hd)
-            print("equal ab_index", ab_index, "ab_hd", ab_hd)
-
-        # 反过来用ASend找A里面哪个最接近会使得a-e大幅度增加
-        # for j in range(len(ASendBack)):
-        #     # 整体计算两个集合中每个多边形的hd值，取最匹配的（hd距离最接近的两个多边形）
-        #     # aa_d = standard_hd(ASendBack[i], CSIa1Back[j])
-        #     # ab_d = standard_hd(ASendBack[i], CSIb1Back[j])
-        #     # ae_d = standard_hd(ASendBack[i], CSIe1Back[j])
-        #     # an_d = standard_hd(ASendBack[i], CSIn1Back[j])
-        #     aa_d = Polygon(ASendBack[j]).hausdorff_distance(Polygon(CSIa1Back[i]))
-        #     ab_d = Polygon(ASendBack[j]).hausdorff_distance(Polygon(CSIb1Back[i]))
-        #     ae_d = Polygon(ASendBack[j]).hausdorff_distance(Polygon(CSIe1Back[i]))
-        #     an_d = Polygon(ASendBack[j]).hausdorff_distance(Polygon(CSIn1Back[i]))
-        #     if aa_d < aa_hd:
-        #         aa_hd = aa_d
-        #         aa_index = j
-        #     if ab_d < ab_hd:
-        #         ab_hd = ab_d
-        #         ab_index = j
-        #     if ae_d < ae_hd:
-        #         ae_hd = ae_d
-        #         ae_index = j
-        #     if an_d < an_hd:
-        #         an_hd = an_d
-        #         an_index = j
-        # if aa_index != ab_index:
-        #     print("aa_index", aa_index, "aa_hd", aa_hd)
-        #     print("ab_index", ab_index, "ab_hd", ab_hd)
 
         # 将横纵坐标之和的值作为排序标准进行排序，然后进行查找，基于原数组的位置作为密钥值
         a_list.append(np.where(np.array(oneDimCSIa1) == np.array(sumEachDim(CSIa1Back, aa_index)))[0][0])
         b_list.append(np.where(np.array(oneDimCSIb1) == np.array(sumEachDim(CSIb1Back, ab_index)))[0][0])
         e_list.append(np.where(np.array(oneDimCSIe1) == np.array(sumEachDim(CSIe1Back, ae_index)))[0][0])
         n_list.append(np.where(np.array(oneDimCSIn1) == np.array(sumEachDim(CSIn1Back, an_index)))[0][0])
-        # print("\n")
-        # print("\033[0;32;40mCSIa1", ASendBack[i], "\033[0m")
-        # print("aa_hd", aa_hd, "\033[0;32;40mCSIa1", CSIa1Back[aa_index], "\033[0m")
-        # print("ab_hd", ab_hd, "\033[0;32;40mCSIb1", CSIb1Back[ab_index], "\033[0m")
-        # print("ae_hd", ae_hd, "CSIe1", CSIe1Back[ae_index])
-        # print("an_hd", an_hd, "CSIn1", CSIn1Back[an_index])
 
         # 比较各个独立计算的hd值的差异
         aa_max = max(aa_max, aa_hd)
@@ -544,44 +399,6 @@ for staInd in range(0, 10 * intvl + 1, intvl):
         ae_max = max(ae_max, ae_hd)
         an_max = max(an_max, an_hd)
 
-        # # 绘图
-        # xs, ys = zip(*sortASendAdd[i])
-        # xa, ya = zip(*sortCSIa1Add[aa_index])
-        # xb, yb = zip(*sortCSIb1Add[ab_index])
-        # xe, ye = zip(*sortCSIe1Add[ae_index])
-        # xn, yn = zip(*sortCSIn1Add[an_index])
-        # plt.figure()
-        # plt.plot(xs, ys, color="green", linewidth=2.5, label="s")
-        # plt.plot(xa, ya, color="red", linewidth=2.5, label="a")
-        # plt.plot(xb, yb, color="blue", linewidth=2.5, label="b")
-        # plt.plot(xe, ye, color="black", linewidth=2.5, label="e")
-        # # plt.plot(xn, yn, color="yellow", linewidth=2.5, label="n") # 数量级差别太大，不方便显示
-        # plt.legend(loc='upper left')
-        # plt.savefig('./figures/' + str(staInd) + '/sabe' + str(i) + '.png')
-        # plt.close()
-        # # plt.show()
-
-        # plt.figure()
-        # plt.plot(xs, ys, color="green", linewidth=2.5, label="s")
-        # plt.plot(xb, yb, color="blue", linewidth=2.5, label="b")
-        # plt.legend(loc='upper left')
-        # plt.show()
-        # plt.close()
-        #
-        # plt.figure()
-        # plt.plot(xs, ys, color="green", linewidth=2.5, label="s")
-        # plt.plot(xe, ye, color="black", linewidth=2.5, label="e")
-        # plt.legend(loc='upper left')
-        # plt.show()
-        # plt.close()
-
-    # plt.close()
-    all_aa_hd.sort()
-    # 差分
-    increment_all_hd = np.array(all_aa_hd[1:]) - np.array(all_aa_hd[:-1])
-    print("most_increment", max(increment_all_hd), min(increment_all_hd))
-    print("all_aa_hd", min(all_aa_hd), max(all_aa_hd), np.std(all_aa_hd))
-    print("aa_max", aa_max, "ab_max", ab_max, "ae_max", ae_max, "an_max", an_max)
     print("keys of a:", len(a_list), a_list)
     print("keys of b:", len(b_list), b_list)
     print("keys of e:", len(e_list), e_list)
