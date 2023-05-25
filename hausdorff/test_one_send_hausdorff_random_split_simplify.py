@@ -190,7 +190,13 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		 0.5974 		 0.0 		 0.0492 		 0.0294 		 no sorting
 # si1 		 0.7465 		 0.0192 	 0.0494 		 0.0369 		 no sorting
 
-isShow = True
+# mean consistency
+# mi1 		 0.9699 		 0.2 		 0.0482 		 0.0468 		 no sorting
+# mo1 		 0.9015 		 0.3333 	 0.0491 		 0.0443 		 no sorting
+# so1 		 0.9257 		 0.4167 	 0.0482 		 0.0446 		 no sorting
+# si1 		 0.9601 		 0.5385 	 0.0482 		 0.0462 		 no sorting
+
+isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
 for f in fileName:
     # print(f)
@@ -305,10 +311,10 @@ for f in fileName:
             # np.random.shuffle(combineCSIx1Orig)
             # CSIa1Orig, CSIb1Orig = zip(*combineCSIx1Orig)
 
-            CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
-            CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
-            CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=30, window='flat')
-            CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=30, window='flat')
+            CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=15, window='flat')
+            CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=15, window='flat')
+            CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=15, window='flat')
+            CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=15, window='flat')
 
             tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
             tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
@@ -316,10 +322,16 @@ for f in fileName:
             tmpCSIe2 = CSIe2Orig[range(staInd, endInd, 1)]
 
             randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
-            tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
-            tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
-            tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
-            tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
+            # tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
+            # tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
+            # tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
+            # tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
+
+            # mean consistency
+            tmpCSIa1 = tmpCSIa1 - (np.mean(tmpCSIa1) - np.mean(tmpCSIb1))
+            tmpCSIb1 = tmpCSIb1 - (np.mean(tmpCSIb1) - np.mean(tmpCSIb1))
+            tmpCSIe1 = tmpCSIe1 - (np.mean(tmpCSIe1) - np.mean(tmpCSIb1))
+            tmpCSIe2 = tmpCSIe2 - (np.mean(tmpCSIe2) - np.mean(tmpCSIb1))
 
             tmpPulse = signal.square(
                 2 * np.pi * 1 / segLen * np.linspace(0, np.pi * 0.5 * int(keyLen / segLen),
@@ -377,6 +389,9 @@ for f in fileName:
             tmpCSIn2.append(sum(tmpNoise2Back[i * segLen:(i + 1) * segLen]))
             tmpCSIn3.append(sum(tmpNoise3Back[i * segLen:(i + 1) * segLen]))
 
+        np.random.seed(0)
+        tmpASend = np.random.normal(np.mean(tmpCSIa1), np.std(tmpCSIa1), len(tmpCSIa1))
+
         # 形成三维数组，其中第三维是一对坐标值
         # 数组的长度由param调节
         # param = 0
@@ -388,10 +403,11 @@ for f in fileName:
         tmpCSIn1Reshape = np.array(tmpCSIn1).reshape((int(len(tmpCSIn1) / 2), 2))
         tmpCSIn2Reshape = np.array(tmpCSIn2).reshape((int(len(tmpCSIn2) / 2), 2))
         tmpCSIn3Reshape = np.array(tmpCSIn3).reshape((int(len(tmpCSIn3) / 2), 2))
+        tmpASendReshape = np.array(tmpASend).reshape((int(len(tmpASend) / 2), 2))
 
-        np.random.seed(0)
-        tmpASendReshape = np.random.normal(np.mean(tmpCSIa1Reshape), np.std(tmpCSIa1Reshape),
-                                            (len(tmpCSIa1Reshape), 2))
+        # np.random.seed(0)
+        # tmpASendReshape = np.random.normal(np.mean(tmpCSIa1Reshape), np.std(tmpCSIa1Reshape),
+        #                                     (len(tmpCSIa1Reshape), 2))
 
         tmpASendSplit = []
         tmpCSIa1Split = []

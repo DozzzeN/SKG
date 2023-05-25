@@ -124,10 +124,22 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		 0.8307 		 0.0 		 0.0357 		 0.0297 		 no sorting
 # si1 		 0.893 		     0.0192 	 0.0357 		 0.0319 		 no sorting
 
+# mean consistency
+# mi1 		 0.9812 		 0.6 		 0.0357 		 0.035 		     no sorting
+# mo1 		 0.974 		     0.6667 	 0.0357 		 0.0348 		 no sorting
+# so1 		 0.9753 		 0.4167 	 0.0357 		 0.0348 		 no sorting
+# si1 		 0.9826 		 0.6346 	 0.0357 		 0.0351 		 no sorting
+
 # mi1 		 0.9078 		 0.1 		 0.0357 		 0.0324 		 index
 # mo1 		 0.9062 		 0.0 		 0.0357 		 0.0324 		 index
 # so1 		 0.8229 		 0.0 		 0.0357 		 0.0294 		 index
 # si1 		 0.8897 		 0.0385 	 0.0357 		 0.0318 		 index
+
+# mean consistency
+# mi1 		 0.9469 		 0.3 		 0.0357 		 0.0338 		 index
+# mo1 		 0.9323 		 0.0 		 0.0357 		 0.0333 		 index
+# so1 		 0.9167 		 0.0 		 0.0357 		 0.0327 		 index
+# si1 		 0.9135 		 0.1154 	 0.0357 		 0.0326 		 index
 
 isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
@@ -253,10 +265,16 @@ for f in fileName:
             tmpCSIe2 = CSIe2Orig[range(staInd, endInd, 1)]
 
             randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
-            tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
-            tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
-            tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
-            tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
+            # tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
+            # tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
+            # tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
+            # tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
+
+            # mean consistency
+            tmpCSIa1 = tmpCSIa1 - (np.mean(tmpCSIa1) - np.mean(tmpCSIb1))
+            tmpCSIb1 = tmpCSIb1 - (np.mean(tmpCSIb1) - np.mean(tmpCSIb1))
+            tmpCSIe1 = tmpCSIe1 - (np.mean(tmpCSIe1) - np.mean(tmpCSIb1))
+            tmpCSIe2 = tmpCSIe2 - (np.mean(tmpCSIe2) - np.mean(tmpCSIb1))
 
             tmpPulse = signal.square(
                 2 * np.pi * 1 / segLen * np.linspace(0, np.pi * 0.5 * int(keyLen / segLen), keyLen))  ## Rectangular pulse
@@ -271,11 +289,11 @@ for f in fileName:
             # tmpCSIe1 = np.sort(tmpCSIe1)
             # tmpCSIe2 = np.sort(tmpCSIe2)
 
-            # operationMode = "index"
-            # tmpCSIa1 = np.array(tmpCSIa1).argsort().argsort()
-            # tmpCSIb1 = np.array(tmpCSIb1).argsort().argsort()
-            # tmpCSIe1 = np.array(tmpCSIe1).argsort().argsort()
-            # tmpCSIe2 = np.array(tmpCSIe2).argsort().argsort()
+            operationMode = "index"
+            tmpCSIa1 = np.array(tmpCSIa1).argsort().argsort()
+            tmpCSIb1 = np.array(tmpCSIb1).argsort().argsort()
+            tmpCSIe1 = np.array(tmpCSIe1).argsort().argsort()
+            tmpCSIe2 = np.array(tmpCSIe2).argsort().argsort()
 
             # inference attack
             tmpNoise1 = np.matmul(np.ones(keyLen), randomMatrix)  # 按列求均值

@@ -152,18 +152,31 @@ fileName = ["../data/data_mobile_indoor_1.mat",
             "../data/data_static_indoor_1.mat"
             ]
 
+# 无意义
 # file 	     bit 	         key 	     KGR 	     KGR with error free 	 mode
 # mi1 		 0.9875 		 0.6 		 0.0893 		 0.0882 		 no sorting
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
 # so1 		 0.9807 		 0.5 		 0.0893 		 0.0876 		 no sorting
 # si1 		 0.9941 		 0.6731 	 0.0893 		 0.0888 		 no sorting
 
+# mean consistency
+# mi1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
+# mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
+# so1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
+# si1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
+
 # mi1 		 0.9862 		 0.7 		 0.0893 		 0.0881 		 index
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
 # so1 		 0.9891 		 0.6667 	 0.0893 		 0.0883 		 index
 # si1 		 0.9952 		 0.75 		 0.0893 		 0.0889 		 index
 
-isShow = True
+# mean consistency
+# mi1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
+# mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
+# so1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
+# si1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
+
+isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
 for f in fileName:
     # print(f)
@@ -285,10 +298,16 @@ for f in fileName:
             tmpCSIe2 = CSIe2Orig[range(staInd, endInd, 1)]
 
             randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
-            tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
-            tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
-            tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
-            tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
+            # tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
+            # tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
+            # tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
+            # tmpCSIe2 = tmpCSIe2 - np.mean(tmpCSIe2)
+
+            # mean consistency
+            tmpCSIa1 = tmpCSIa1 - (np.mean(tmpCSIa1) - np.mean(tmpCSIb1))
+            tmpCSIb1 = tmpCSIb1 - (np.mean(tmpCSIb1) - np.mean(tmpCSIb1))
+            tmpCSIe1 = tmpCSIe1 - (np.mean(tmpCSIe1) - np.mean(tmpCSIb1))
+            tmpCSIe2 = tmpCSIe2 - (np.mean(tmpCSIe2) - np.mean(tmpCSIb1))
 
             tmpPulse = signal.square(
                 2 * np.pi * 1 / segLen * np.linspace(0, np.pi * 0.5 * int(keyLen / segLen), keyLen))  ## Rectangular pulse
@@ -568,11 +587,11 @@ for f in fileName:
             n3_list += str(np.random.randint(0, 2))
 
         # print("keys of a:", a_list)
-        print("keys of a:", a_list_number)
+        # print("keys of a:", a_list_number)
         # print("keys of b:", b_list)
-        print("keys of b:", b_list_number)
+        # print("keys of b:", b_list_number)
         # print("keys of e1:", e1_list)
-        print("keys of e1:", e1_list_number)
+        # print("keys of e1:", e1_list_number)
         # print("keys of e2:", e2_list)
         # print("keys of n1:", n1_list)
         # print("keys of n2:", n2_list)
