@@ -115,28 +115,33 @@ fileName = ["../data/data_mobile_indoor_1.mat",
             "../data/data_static_indoor_1.mat"
             ]
 
+# 发送原始数据的随机置换，用index做匹配，安全性差，性能好
 # file 	     bit 	         key 	     KGR 	         KGR with error free 	 mode
 # mi1 		 0.9537 		 0.4 		 0.125 		     0.1192 		 no sorting
 # mo1 		 0.8725 		 0.0 		 0.125 		     0.1091 		 no sorting
 # so1 		 0.9548 		 0.0588 	 0.125 		     0.1193 		 no sorting
 # si1 		 0.9723 		 0.2361 	 0.125 		     0.1215 		 no sorting
 
+# 发送原始数据的随机置换，用index做匹配，安全性差，性能好
 # mi1 		 0.9831 		 0.7 		 0.0893 		 0.0878 		 no sorting
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
 # so1 		 0.9802 		 0.5 		 0.0893 		 0.0875 		 no sorting
 # si1 		 0.9952 		 0.8269 	 0.0893 		 0.0889 		 no sorting
 
+# 发送原始数据的随机置换，用index做匹配，安全性差，性能好
 # mean consistency
 # mi1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 no sorting
 # mo1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 no sorting
 # so1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 no sorting
 # si1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 no sorting
 
+# 发送原始数据的随机置换，用value做匹配，安全性差，性能好
 # mi1 		 0.9825 		 0.8 		 0.0893 		 0.0877 		 index
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
 # so1 		 0.9906 		 0.6667 	 0.0893 		 0.0884 		 index
 # si1 		 0.9969 		 0.8462 	 0.0893 		 0.089 		     index
 
+# 发送原始数据的随机置换，用value做匹配，安全性差，性能好
 # mean consistency
 # mi1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 index
 # mo1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 index
@@ -365,7 +370,9 @@ for f in fileName:
         rand_out_polygon = list(range(len(tmpCSIa1Reshape)))
         rand_in_polygon = list(range(step))
 
+        random.seed(0)
         random.shuffle(rand_out_polygon)
+        random.seed(0)
         random.shuffle(rand_in_polygon)
         for i in range(len(tmpCSIa1Reshape)):
             for j in range(step):

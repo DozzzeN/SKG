@@ -6,13 +6,9 @@ import shutil
 import sys
 
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy import signal
 from scipy.io import loadmat
 from shapely.geometry import Polygon  # 1.8.0
-
-from RandomWayPoint import RandomWayPoint
-
 
 def is_in_poly(p, polygon):
     # https://blog.csdn.net/leviopku/article/details/111224539
@@ -159,6 +155,7 @@ def genRandomStep(len, lowBound, highBound):
     randomStep = []
     # 少于三则无法分，因为至少要划分出一个三角形
     while len - length >= lowBound:
+        random.seed(0)
         step = random.randint(lowBound, highBound)
         randomStep.append(step)
         length += step
@@ -268,6 +265,8 @@ for staInd in range(0, dataLen, keyLen * intvl):
         sortNoise.append(sum(tmpNoise[i * intvl:(i + 1) * intvl]))
 
     np.random.seed(0)
+    _mean = np.mean(sortCSIa1)
+    _std = np.std(sortCSIa1)
     sortASend = np.random.normal(np.mean(sortCSIa1), np.std(sortCSIa1), len(sortCSIa1))
 
     # 形成三维数组，其中第三维是一对坐标值
@@ -385,6 +384,7 @@ for staInd in range(0, dataLen, keyLen * intvl):
                 times2 = 0
                 while True:
                     times2 += 1
+                    random.seed(0)
                     noisePoint = [random.uniform(s_centroid[0][0] - closest,
                                                  s_centroid[0][0] + closest),
                                   random.uniform(s_centroid[0][1] - closest,
@@ -417,23 +417,6 @@ for staInd in range(0, dataLen, keyLen * intvl):
                     noisePointList[i].pop()
             # print("opt-distance", i, standard_hd(listASend, CSIa1Back[closest_index]))
         ASendBack[i] = np.array(Polygon(listASend).convex_hull.exterior.coords)
-
-    # 降维以用于后续的排序
-    # oneDimCSIa1 = toOneDim(CSIa1Back)
-    # oneDimCSIb1 = toOneDim(CSIb1Back)
-    # oneDimCSIe1 = toOneDim(CSIe1Back)
-    # oneDimCSIn1 = toOneDim(CSIn1Back)
-    # oneDimASend = toOneDim(ASendBack)
-    # oneDimASendBeforeNoise = toOneDim(ASendBackBeforeNoise)
-
-    # # ASend不能与CSIa1相交
-    # for i in range(len(sortASendAdd)):
-    #     for j in range(len(sortASendAdd[i])):
-    #         is_in = is_in_poly(sortASendAdd[i][j], sortCSIa1[i])
-    #         while is_in is True:
-    #             sortASendAdd[i][j] = [np.random.randint(0, np.mean(sortCSIa1)),
-    #                                   np.random.randint(0, np.mean(sortCSIa1))]
-    #             is_in = is_in_poly(sortASendAdd[i][j], sortCSIa1[i])
 
     # 在数组a后面加上a[0]使之成为一个首尾封闭的多边形
     sortCSIa1Add = makePolygon(CSIa1Back)
@@ -595,7 +578,7 @@ for staInd in range(0, dataLen, keyLen * intvl):
     for i in range(min(len(a_list), len(n_list))):
         sum4 += (a_list[i] == n_list[i])
     for i in range(min(len(a_list), len(a_before_list))):
-        sum5 += (a_list[i] - a_before_list[i] == 0)
+        sum5 += (int(a_list[i]) - a_before_list[i] == 0)
 
     originSum += sum1
     correctSum += sum2

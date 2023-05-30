@@ -159,17 +159,20 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		 0.9807 		 0.5 		 0.0893 		 0.0876 		 no sorting
 # si1 		 0.9941 		 0.6731 	 0.0893 		 0.0888 		 no sorting
 
+# 无意义
 # mean consistency
 # mi1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
 # so1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
 # si1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 no sorting
 
+# 无意义
 # mi1 		 0.9862 		 0.7 		 0.0893 		 0.0881 		 index
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
 # so1 		 0.9891 		 0.6667 	 0.0893 		 0.0883 		 index
 # si1 		 0.9952 		 0.75 		 0.0893 		 0.0889 		 index
 
+# 无意义
 # mean consistency
 # mi1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
 # mo1 		 1.0 		     1.0 		 0.0893 		 0.0893 		 index
@@ -397,7 +400,7 @@ for f in fileName:
         rand_out_polygon = list(range(len(tmpCSIa1Reshape)))
         rand_in_polygon = list(range(step))
 
-
+        # 所有按照相同的洗牌方式洗牌，无意义
         random.seed(0)
         random.shuffle(rand_out_polygon)
         random.seed(0)

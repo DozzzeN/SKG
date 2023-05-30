@@ -118,23 +118,27 @@ fileName = ["../data/data_mobile_indoor_1.mat",
             "../data/data_static_indoor_1.mat"
             ]
 
+# 发送原始数据的同分布噪音，用value做匹配，安全性好，性能好
 # file 	     bit 	         key 	     KGR 	         KGR with error free 	 mode
 # mi1 		 0.9125 		 0.1 		 0.0357 		 0.0326 		 no sorting
 # mo1 		 0.8958 		 0.0 		 0.0357 		 0.032 		     no sorting
 # so1 		 0.8307 		 0.0 		 0.0357 		 0.0297 		 no sorting
 # si1 		 0.893 		     0.0192 	 0.0357 		 0.0319 		 no sorting
 
+# 发送原始数据的同分布噪音，用value做匹配，安全性好，性能好
 # mean consistency
 # mi1 		 0.9812 		 0.6 		 0.0357 		 0.035 		     no sorting
 # mo1 		 0.974 		     0.6667 	 0.0357 		 0.0348 		 no sorting
 # so1 		 0.9753 		 0.4167 	 0.0357 		 0.0348 		 no sorting
 # si1 		 0.9826 		 0.6346 	 0.0357 		 0.0351 		 no sorting
 
+# 发送原始数据的同分布噪音，用index做匹配，安全性好，性能好
 # mi1 		 0.9078 		 0.1 		 0.0357 		 0.0324 		 index
 # mo1 		 0.9062 		 0.0 		 0.0357 		 0.0324 		 index
 # so1 		 0.8229 		 0.0 		 0.0357 		 0.0294 		 index
 # si1 		 0.8897 		 0.0385 	 0.0357 		 0.0318 		 index
 
+# 发送原始数据的同分布噪音，用index做匹配，安全性好，性能好
 # mean consistency
 # mi1 		 0.9469 		 0.3 		 0.0357 		 0.0338 		 index
 # mo1 		 0.9323 		 0.0 		 0.0357 		 0.0333 		 index
