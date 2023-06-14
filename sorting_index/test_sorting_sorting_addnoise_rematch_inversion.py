@@ -178,358 +178,354 @@ def dpAttack(x, r):
     return xe
 
 
-rawData = loadmat("../data/data_mobile_indoor_1.mat")
-corrMatName = "corr_mi_inv.mat"
-rssMatName = "corr_mi_rss_inv.mat"
+fileName = ["../data/data_mobile_indoor_1.mat",
+            "../data/data_mobile_outdoor_1.mat",
+            "../data/data_static_outdoor_1.mat",
+            "../data/data_static_indoor_1.mat"
+            ]
 
-# CSIa1Orig = rawData['A'][:, 0][0: 20000]
-# CSIb1Orig = rawData['A'][:, 1][0: 20000]
-CSIa1Orig = rawData['A'][:, 0]
-CSIb1Orig = rawData['A'][:, 1]
-dataLen = len(CSIa1Orig)
+for f in fileName:
+    # print(f)
+    rawData = loadmat(f)
 
-rec = True
+    roBits = 1024
+    episodeLen = 1
 
-originSum = 0
-correctSum = 0
-randomSum1 = 0
-randomSum2 = 0
+    spiltFileName = f.split("_")
+    corrMatName = "corr_" + spiltFileName[1][0] + spiltFileName[2][0] + str(roBits) + "_inv.mat"
+    rssMatName = "corr_" + spiltFileName[1][0] + spiltFileName[2][0] + str(roBits) + "_rss_inv.mat"
 
-originWholeSum = 0
-correctWholeSum = 0
-randomWholeSum1 = 0
-randomWholeSum2 = 0
+    CSIa1Orig = rawData['A'][:, 0]
+    CSIb1Orig = rawData['A'][:, 1]
+    dataLen = len(CSIa1Orig)
+    print(f, "dataLen: ", dataLen)
 
-trueKey = []
-legiKey = []
-inv1Key = []
-inv2Key = []
+    originSum = 0
+    correctSum = 0
+    randomSum1 = 0
+    randomSum2 = 0
 
-legiCorr = []
-inv1Corr = []
-inv2Corr = []
+    originWholeSum = 0
+    correctWholeSum = 0
+    randomWholeSum1 = 0
+    randomWholeSum2 = 0
 
-trueRSS = []
-legiRSS = []
-inv1RSS = []
-inv2RSS = []
+    trueKey = []
+    legiKey = []
+    inv1Key = []
+    inv2Key = []
 
-legiCorrRSS = []
-inv1CorrRSS = []
-inv2CorrRSS = []
+    legiCorr = []
+    inv1Corr = []
+    inv2Corr = []
 
-times = 0
+    trueRSS = []
+    legiRSS = []
+    inv1RSS = []
+    inv2RSS = []
 
-roBits = 1024
-episodeLen = 1
+    legiCorrRSS = []
+    inv1CorrRSS = []
+    inv2CorrRSS = []
 
-epiLen = roBits
-segLen = 1
-while segLen <= episodeLen * 2:
-    print("\033[0;34;40msegLen", segLen, "epiLen", epiLen, "\033[0m")
-    keyLen = epiLen * segLen
+    times = 0
 
-    trueCurrKey = []
-    legiCurrKey = []
-    inv1CurrKey = []
-    inv2CurrKey = []
+    epiLen = roBits
+    segLen = 1
+    while segLen <= episodeLen * 2:
+        print("\033[0;34;40msegLen", segLen, "epiLen", epiLen, "\033[0m")
+        keyLen = epiLen * segLen
 
-    trueCurrRSS = []
-    legiCurrRSS = []
-    inv1CurrRSS = []
-    inv2CurrRSS = []
+        trueCurrKey = []
+        legiCurrKey = []
+        inv1CurrKey = []
+        inv2CurrKey = []
 
-    # runs = 0
-    for staInd in range(0, dataLen, keyLen):
-    # for staInd in range(0, int(dataLen / 5.5), int(keyLen / 10)):
-        # runs += 1
-        # if runs > 2:
-        #     break
-        endInd = staInd + keyLen
+        trueCurrRSS = []
+        legiCurrRSS = []
+        inv1CurrRSS = []
+        inv2CurrRSS = []
 
-        print("range:", staInd, endInd)
-        if endInd >= len(CSIa1Orig):
-            break
+        dataLenLoop = dataLen
+        keyLenLoop = keyLen
+        if f == "../data/data_static_indoor_1.mat":
+            dataLenLoop = int(dataLen / 5.5)
+            keyLenLoop = int(keyLen / 5)
+        for staInd in range(0, dataLenLoop, keyLenLoop):
+            endInd = staInd + keyLen
+            # print("range:", staInd, endInd)
+            if endInd >= len(CSIa1Orig):
+                break
 
-        # 只计算最底层RO的长度作为样本值个数
-        if epiLen == roBits:
-            times += 1
+            # 只计算最底层RO的长度作为样本值个数
+            if epiLen == roBits:
+                times += 1
 
-        tmpCSIe11 = []
-        tmpCSIe12 = []
-        for repeated in range(2):
-            # np.random.seed(1)
-            CSIa1Orig = rawData['A'][:, 0]
-            CSIb1Orig = rawData['A'][:, 1]
+            tmpCSIe11 = []
+            tmpCSIe12 = []
+            for repeated in range(2):
+                CSIa1Orig = rawData['A'][:, 0]
+                CSIb1Orig = rawData['A'][:, 1]
 
-            seed = np.random.randint(100000)
-            np.random.seed(seed)
+                seed = np.random.randint(100000)
+                np.random.seed(seed)
 
-            # 静态数据需要置换
-            # 固定随机置换的种子
-            # np.random.seed(0)
-            # combineCSIx1Orig = list(zip(CSIa1Orig, CSIb1Orig))
-            # np.random.shuffle(combineCSIx1Orig)
-            # CSIa1Orig, CSIb1Orig = zip(*combineCSIx1Orig)
+                CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
+                CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
 
-            CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
-            CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
+                tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
+                tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
 
-            tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
-            tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
+                randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
+                tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
+                tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
+                tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
+                tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
 
-            randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
-            tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
-            tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
-            tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
-            tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
+                if repeated == 0:
+                    # iterative attack
+                    tmpCSIe11 = iterAttack(tmpCSIa1, randomMatrix)
+                    # solving dp problem
+                    # tmpCSIe12 = dpAttack(tmpCSIa1, randomMatrix)
+                    tmpCSIe12 = np.random.normal(0, np.std(CSIa1Orig) * 4, keyLen)
+                if repeated == 1:
+                    tmpCSIe1 = np.matmul(tmpCSIe11 - np.mean(tmpCSIe11), randomMatrix)
+                    tmpCSIe2 = np.matmul(tmpCSIe12 - np.mean(tmpCSIe12), randomMatrix)
 
-            if repeated == 0:
-                # iterative attack
-                tmpCSIe11 = iterAttack(tmpCSIa1, randomMatrix)
-                # solving dp problem
-                # tmpCSIe12 = dpAttack(tmpCSIa1, randomMatrix)
-                tmpCSIe12 = np.random.normal(0, np.std(CSIa1Orig) * 4, keyLen)
-            if repeated == 1:
-                tmpCSIe1 = np.matmul(tmpCSIe11 - np.mean(tmpCSIe11), randomMatrix)
-                tmpCSIe2 = np.matmul(tmpCSIe12 - np.mean(tmpCSIe12), randomMatrix)
+                # 最后各自的密钥
+                a_list = []
+                b_list = []
 
-            # 最后各自的密钥
-            a_list = []
-            b_list = []
+                tmpCSIa1Ind = np.array(tmpCSIa1).argsort().argsort()
+                tmpCSIb1Ind = np.array(tmpCSIb1).argsort().argsort()
 
-            tmpCSIa1Ind = np.array(tmpCSIa1).argsort().argsort()
-            tmpCSIb1Ind = np.array(tmpCSIb1).argsort().argsort()
+                minEpiIndClosenessLsb = np.zeros(int(keyLen / segLen), dtype=int)
 
-            minEpiIndClosenessLsb = np.zeros(int(keyLen / segLen), dtype=int)
-
-            tmpCSIa1IndReshape = np.array(tmpCSIa1Ind).reshape(int(keyLen / segLen), segLen)
-            permutation = list(range(int(keyLen / segLen)))
-            combineMetric = list(zip(tmpCSIa1IndReshape, permutation))
-            np.random.seed(staInd)
-            np.random.shuffle(combineMetric)
-            tmpCSIa1IndReshape, permutation = zip(*combineMetric)
-            tmpCSIa1Ind = np.hstack((tmpCSIa1IndReshape))
-
-            for i in range(int(keyLen / segLen)):
-                epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
-
-                epiIndClosenessLsb = np.zeros(int(keyLen / segLen))
-
-                for j in range(int(keyLen / segLen)):
-                    epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
-
-                    epiIndClosenessLsb[j] = sum(abs(epiIndb1 - np.array(epiInda1)))
-
-                minEpiIndClosenessLsb[i] = np.argmin(epiIndClosenessLsb)
-
-            a_list_number = list(permutation)
-            b_list_number = list(minEpiIndClosenessLsb)
-
-            # 转成二进制，0填充成0000
-            for i in range(len(a_list_number)):
-                number = bin(a_list_number[i])[2:].zfill(int(np.log2(len(a_list_number))))
-                a_list += number
-            for i in range(len(b_list_number)):
-                number = bin(b_list_number[i])[2:].zfill(int(np.log2(len(b_list_number))))
-                b_list += number
-
-            sum1 = min(len(a_list), len(b_list))
-            sum2 = 0
-            for i in range(0, sum1):
-                sum2 += (a_list[i] == b_list[i])
-
-            # 自适应纠错
-            if sum1 != sum2 and rec:
-                # a告诉b哪些位置出错，b对其纠错
-                for i in range(len(a_list_number)):
-                    if a_list_number[i] != b_list_number[i]:
-                        epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
-
-                        epiIndClosenessLsb = np.zeros(int(keyLen / segLen))
-
-                        for j in range(int(keyLen / segLen)):
-                            epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
-                            epiIndClosenessLsb[j] = sum(abs(epiIndb1 - np.array(epiInda1)))
-
-                        min_b = np.argmin(epiIndClosenessLsb)
-                        epiIndClosenessLsb[min_b] = keyLen * segLen
-                        b_list_number[i] = np.argmin(epiIndClosenessLsb)
-
-                        b_list = []
-
-                        for i in range(len(b_list_number)):
-                            number = bin(b_list_number[i])[2:].zfill(int(np.log2(len(b_list_number))))
-                            b_list += number
-
-                        # print("keys of b:", len(b_list_number), b_list_number)
-
-                        sum2 = 0
-                        for i in range(0, min(len(a_list), len(b_list))):
-                            sum2 += (a_list[i] == b_list[i])
-
-            if repeated == 1:
-                e1_list = []
-                e2_list = []
-
-                tmpCSIe1Ind = np.array(tmpCSIe11).argsort().argsort()
-                tmpCSIe2Ind = np.array(tmpCSIe12).argsort().argsort()
-
-                minEpiIndClosenessLse1 = np.zeros(int(keyLen / segLen), dtype=int)
-                minEpiIndClosenessLse2 = np.zeros(int(keyLen / segLen), dtype=int)
+                tmpCSIa1IndReshape = np.array(tmpCSIa1Ind).reshape(int(keyLen / segLen), segLen)
+                permutation = list(range(int(keyLen / segLen)))
+                combineMetric = list(zip(tmpCSIa1IndReshape, permutation))
+                np.random.seed(staInd)
+                np.random.shuffle(combineMetric)
+                tmpCSIa1IndReshape, permutation = zip(*combineMetric)
+                tmpCSIa1Ind = np.hstack((tmpCSIa1IndReshape))
 
                 for i in range(int(keyLen / segLen)):
                     epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
 
-                    epiIndClosenessLse1 = np.zeros(int(keyLen / segLen))
-                    epiIndClosenessLse2 = np.zeros(int(keyLen / segLen))
+                    epiIndClosenessLsb = np.zeros(int(keyLen / segLen))
 
                     for j in range(int(keyLen / segLen)):
                         epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
-                        epiInde1 = tmpCSIe1Ind[j * segLen: (j + 1) * segLen]
-                        epiInde2 = tmpCSIe2Ind[j * segLen: (j + 1) * segLen]
 
-                        epiIndClosenessLse1[j] = sum(abs(epiInde1 - np.array(epiInda1)))
-                        epiIndClosenessLse2[j] = sum(abs(epiInde2 - np.array(epiInda1)))
+                        epiIndClosenessLsb[j] = sum(abs(epiIndb1 - np.array(epiInda1)))
 
-                    minEpiIndClosenessLse1[i] = np.argmin(epiIndClosenessLse1)
-                    minEpiIndClosenessLse2[i] = np.argmin(epiIndClosenessLse2)
+                    minEpiIndClosenessLsb[i] = np.argmin(epiIndClosenessLsb)
 
-                e1_list_number = list(minEpiIndClosenessLse1)
-                e2_list_number = list(minEpiIndClosenessLse2)
+                a_list_number = list(permutation)
+                b_list_number = list(minEpiIndClosenessLsb)
 
-                for i in range(len(e1_list_number)):
-                    number = bin(e1_list_number[i])[2:].zfill(int(np.log2(len(e1_list_number))))
-                    e1_list += number
-                for i in range(len(e2_list_number)):
-                    number = bin(e2_list_number[i])[2:].zfill(int(np.log2(len(e2_list_number))))
-                    e2_list += number
+                # 转成二进制，0填充成0000
+                for i in range(len(a_list_number)):
+                    number = bin(a_list_number[i])[2:].zfill(int(np.log2(len(a_list_number))))
+                    a_list += number
+                for i in range(len(b_list_number)):
+                    number = bin(b_list_number[i])[2:].zfill(int(np.log2(len(b_list_number))))
+                    b_list += number
 
-                # 对齐密钥，随机补全
-                for i in range(len(a_list) - len(e1_list)):
-                    e1_list += str(np.random.randint(0, 2))
-                for i in range(len(a_list) - len(e2_list)):
-                    e2_list += str(np.random.randint(0, 2))
+                sum1 = min(len(a_list), len(b_list))
+                sum2 = 0
+                for i in range(0, sum1):
+                    sum2 += (a_list[i] == b_list[i])
 
-                sum31 = 0
-                sum32 = 0
+                # 自适应纠错
+                if sum1 != sum2:
+                    # a告诉b哪些位置出错，b对其纠错
+                    for i in range(len(a_list_number)):
+                        if a_list_number[i] != b_list_number[i]:
+                            epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
 
-                for i in range(min(len(a_list), len(e1_list))):
-                    sum31 += (a_list[i] == e1_list[i])
-                for i in range(min(len(a_list), len(e2_list))):
-                    sum32 += (a_list[i] == e2_list[i])
+                            epiIndClosenessLsb = np.zeros(int(keyLen / segLen))
 
-                print("\033[0;32;40ma-b", sum2, sum2 / sum1, "\033[0m")
-                print("a-e1", sum31, sum31 / sum1)
-                print("a-e2", sum32, sum32 / sum1)
-                originSum += sum1
-                correctSum += sum2
-                randomSum1 += sum31
-                randomSum2 += sum32
+                            for j in range(int(keyLen / segLen)):
+                                epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
+                                epiIndClosenessLsb[j] = sum(abs(epiIndb1 - np.array(epiInda1)))
 
-                originWholeSum += 1
-                correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
-                randomWholeSum1 = randomWholeSum1 + 1 if sum31 == sum1 else randomWholeSum1
-                randomWholeSum2 = randomWholeSum2 + 1 if sum32 == sum1 else randomWholeSum2
+                            min_b = np.argmin(epiIndClosenessLsb)
+                            epiIndClosenessLsb[min_b] = keyLen * segLen
+                            b_list_number[i] = np.argmin(epiIndClosenessLsb)
 
-                trueCurrKey.append(a_list_number)
-                legiCurrKey.append(b_list_number)
-                inv1CurrKey.append(e1_list_number)
-                inv2CurrKey.append(e2_list_number)
+                            b_list = []
 
-                trueCurrRSS.append(tmpCSIa1)
-                legiCurrRSS.append(tmpCSIb1)
-                inv1CurrRSS.append(tmpCSIe11)
-                inv2CurrRSS.append(tmpCSIe12)
+                            for i in range(len(b_list_number)):
+                                number = bin(b_list_number[i])[2:].zfill(int(np.log2(len(b_list_number))))
+                                b_list += number
 
-    trueKey.append(trueCurrKey)
-    legiKey.append(legiCurrKey)
-    inv1Key.append(inv1CurrKey)
-    inv2Key.append(inv2CurrKey)
+                            sum2 = 0
+                            for i in range(0, min(len(a_list), len(b_list))):
+                                sum2 += (a_list[i] == b_list[i])
 
-    trueRSS.append(trueCurrRSS)
-    legiRSS.append(legiCurrRSS)
-    inv1RSS.append(inv1CurrRSS)
-    inv2RSS.append(inv2CurrRSS)
+                if repeated == 1:
+                    e1_list = []
+                    e2_list = []
 
-    segLen = segLen * 2
-    epiLen = int(epiLen / 2)
+                    tmpCSIe1Ind = np.array(tmpCSIe11).argsort().argsort()
+                    tmpCSIe2Ind = np.array(tmpCSIe12).argsort().argsort()
 
-trueRO = []
-legiRO = []
-inv1RO = []
-inv2RO = []
+                    minEpiIndClosenessLse1 = np.zeros(int(keyLen / segLen), dtype=int)
+                    minEpiIndClosenessLse2 = np.zeros(int(keyLen / segLen), dtype=int)
 
-trueSample = []
-legiSample = []
-inv1Sample = []
-inv2Sample = []
+                    for i in range(int(keyLen / segLen)):
+                        epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
 
-# 组装成完整的密钥
-for i in range(len(trueKey[0])):
-    trueTmp = []
-    legiTmp = []
-    inv1Tmp = []
-    inv2Tmp = []
-    for j in range(len(trueKey)):
-        if i >= len(trueKey[j]):
-            break
-        trueTmp.append(trueKey[j][i])
-        legiTmp.append(legiKey[j][i])
-        inv1Tmp.append(inv1Key[j][i])
-        inv2Tmp.append(inv2Key[j][i])
-    trueRO.append(list(chain.from_iterable(trueTmp)))
-    legiRO.append(list(chain.from_iterable(legiTmp)))
-    inv1RO.append(list(chain.from_iterable(inv1Tmp)))
-    inv2RO.append(list(chain.from_iterable(inv2Tmp)))
+                        epiIndClosenessLse1 = np.zeros(int(keyLen / segLen))
+                        epiIndClosenessLse2 = np.zeros(int(keyLen / segLen))
 
-for i in range(len(trueRSS[0])):
-    trueTmp = []
-    legiTmp = []
-    inv1Tmp = []
-    inv2Tmp = []
-    for j in range(len(trueRSS)):
-        if i >= len(trueKey[j]):
-            break
-        trueTmp.append(trueRSS[j][i])
-        legiTmp.append(legiRSS[j][i])
-        inv1Tmp.append(inv1RSS[j][i])
-        inv2Tmp.append(inv2RSS[j][i])
+                        for j in range(int(keyLen / segLen)):
+                            epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
+                            epiInde1 = tmpCSIe1Ind[j * segLen: (j + 1) * segLen]
+                            epiInde2 = tmpCSIe2Ind[j * segLen: (j + 1) * segLen]
 
-    trueSample.append(list(chain.from_iterable(trueTmp)))
-    legiSample.append(list(chain.from_iterable(legiTmp)))
-    inv1Sample.append(list(chain.from_iterable(inv1Tmp)))
-    inv2Sample.append(list(chain.from_iterable(inv2Tmp)))
+                            epiIndClosenessLse1[j] = sum(abs(epiInde1 - np.array(epiInda1)))
+                            epiIndClosenessLse2[j] = sum(abs(epiInde2 - np.array(epiInda1)))
 
-print("\033[0;34;40ma-b all", correctSum, "/", originSum, "=", round(correctSum / originSum, 10), "\033[0m")
-print("a-e1 all", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))
-print("a-e2 all", randomSum2, "/", originSum, "=", round(randomSum2 / originSum, 10))
-print("\033[0;34;40ma-b whole match", correctWholeSum, "/", originWholeSum, "=",
-      round(correctWholeSum / originWholeSum, 10), "\033[0m")
-print("a-e1 whole match", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))
-print("a-e2 whole match", randomWholeSum2, "/", originWholeSum, "=", round(randomWholeSum2 / originWholeSum, 10))
-print("times", times)
+                        minEpiIndClosenessLse1[i] = np.argmin(epiIndClosenessLse1)
+                        minEpiIndClosenessLse2[i] = np.argmin(epiIndClosenessLse2)
 
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10),
-      originSum / times / roBits / episodeLen,
-      correctSum / times / roBits / episodeLen)
+                    e1_list_number = list(minEpiIndClosenessLse1)
+                    e2_list_number = list(minEpiIndClosenessLse2)
 
-# 每次生成的RO之间的相关系数
-for i in range(len(trueRO)):
-    legiCorr.append(abs(pearsonr(trueRO[i], legiRO[i])[0]))
-    inv1Corr.append(abs(pearsonr(trueRO[i], inv1RO[i])[0]))
-    inv2Corr.append(abs(pearsonr(trueRO[i], inv2RO[i])[0]))
+                    for i in range(len(e1_list_number)):
+                        number = bin(e1_list_number[i])[2:].zfill(int(np.log2(len(e1_list_number))))
+                        e1_list += number
+                    for i in range(len(e2_list_number)):
+                        number = bin(e2_list_number[i])[2:].zfill(int(np.log2(len(e2_list_number))))
+                        e2_list += number
 
-for i in range(len(trueRO)):
-    legiCorrRSS.append(abs(pearsonr(trueSample[i], legiSample[i])[0]))
-    inv1CorrRSS.append(abs(pearsonr(trueSample[i], inv1Sample[i])[0]))
-    inv2CorrRSS.append(abs(pearsonr(trueSample[i], inv2Sample[i])[0]))
+                    # 对齐密钥，随机补全
+                    for i in range(len(a_list) - len(e1_list)):
+                        e1_list += str(np.random.randint(0, 2))
+                    for i in range(len(a_list) - len(e2_list)):
+                        e2_list += str(np.random.randint(0, 2))
 
-savemat(corrMatName, {"legiCorr": legiCorr,
-                      "inv1Corr": inv1Corr,
-                      "inv2Corr": inv2Corr})
+                    sum31 = 0
+                    sum32 = 0
 
-savemat(rssMatName, {"legiCorrRSS": legiCorrRSS,
-                     "inv1CorrRSS": inv1CorrRSS,
-                     "inv2CorrRSS": inv2CorrRSS})
+                    for i in range(min(len(a_list), len(e1_list))):
+                        sum31 += (a_list[i] == e1_list[i])
+                    for i in range(min(len(a_list), len(e2_list))):
+                        sum32 += (a_list[i] == e2_list[i])
+
+                    # print("\033[0;32;40ma-b", sum2, sum2 / sum1, "\033[0m")
+                    # print("a-e1", sum31, sum31 / sum1)
+                    # print("a-e2", sum32, sum32 / sum1)
+                    originSum += sum1
+                    correctSum += sum2
+                    randomSum1 += sum31
+                    randomSum2 += sum32
+
+                    originWholeSum += 1
+                    correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
+                    randomWholeSum1 = randomWholeSum1 + 1 if sum31 == sum1 else randomWholeSum1
+                    randomWholeSum2 = randomWholeSum2 + 1 if sum32 == sum1 else randomWholeSum2
+
+                    trueCurrKey.append(a_list_number)
+                    legiCurrKey.append(b_list_number)
+                    inv1CurrKey.append(e1_list_number)
+                    inv2CurrKey.append(e2_list_number)
+
+                    trueCurrRSS.append(tmpCSIa1)
+                    legiCurrRSS.append(tmpCSIb1)
+                    inv1CurrRSS.append(tmpCSIe11)
+                    inv2CurrRSS.append(tmpCSIe12)
+
+        trueKey.append(trueCurrKey)
+        legiKey.append(legiCurrKey)
+        inv1Key.append(inv1CurrKey)
+        inv2Key.append(inv2CurrKey)
+
+        trueRSS.append(trueCurrRSS)
+        legiRSS.append(legiCurrRSS)
+        inv1RSS.append(inv1CurrRSS)
+        inv2RSS.append(inv2CurrRSS)
+
+        segLen = segLen * 2
+        epiLen = int(epiLen / 2)
+
+    trueRO = []
+    legiRO = []
+    inv1RO = []
+    inv2RO = []
+
+    trueSample = []
+    legiSample = []
+    inv1Sample = []
+    inv2Sample = []
+
+    # 组装成完整的密钥
+    for i in range(len(trueKey[0])):
+        trueTmp = []
+        legiTmp = []
+        inv1Tmp = []
+        inv2Tmp = []
+        for j in range(len(trueKey)):
+            if i >= len(trueKey[j]):
+                break
+            trueTmp.append(trueKey[j][i])
+            legiTmp.append(legiKey[j][i])
+            inv1Tmp.append(inv1Key[j][i])
+            inv2Tmp.append(inv2Key[j][i])
+        trueRO.append(list(chain.from_iterable(trueTmp)))
+        legiRO.append(list(chain.from_iterable(legiTmp)))
+        inv1RO.append(list(chain.from_iterable(inv1Tmp)))
+        inv2RO.append(list(chain.from_iterable(inv2Tmp)))
+
+    for i in range(len(trueRSS[0])):
+        trueTmp = []
+        legiTmp = []
+        inv1Tmp = []
+        inv2Tmp = []
+        for j in range(len(trueRSS)):
+            if i >= len(trueKey[j]):
+                break
+            trueTmp.append(trueRSS[j][i])
+            legiTmp.append(legiRSS[j][i])
+            inv1Tmp.append(inv1RSS[j][i])
+            inv2Tmp.append(inv2RSS[j][i])
+
+        trueSample.append(list(chain.from_iterable(trueTmp)))
+        legiSample.append(list(chain.from_iterable(legiTmp)))
+        inv1Sample.append(list(chain.from_iterable(inv1Tmp)))
+        inv2Sample.append(list(chain.from_iterable(inv2Tmp)))
+
+    print("\033[0;34;40ma-b all", correctSum, "/", originSum, "=", round(correctSum / originSum, 10), "\033[0m")
+    print("a-e1 all", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))
+    print("a-e2 all", randomSum2, "/", originSum, "=", round(randomSum2 / originSum, 10))
+    print("\033[0;34;40ma-b whole match", correctWholeSum, "/", originWholeSum, "=",
+          round(correctWholeSum / originWholeSum, 10), "\033[0m")
+    print("a-e1 whole match", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))
+    print("a-e2 whole match", randomWholeSum2, "/", originWholeSum, "=", round(randomWholeSum2 / originWholeSum, 10))
+    print("times", times)
+
+    print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10),
+          originSum / times / roBits / episodeLen,
+          correctSum / times / roBits / episodeLen)
+
+    # 每次生成的RO之间的相关系数
+    for i in range(len(trueRO)):
+        legiCorr.append(abs(pearsonr(trueRO[i], legiRO[i])[0]))
+        inv1Corr.append(abs(pearsonr(trueRO[i], inv1RO[i])[0]))
+        inv2Corr.append(abs(pearsonr(trueRO[i], inv2RO[i])[0]))
+
+    for i in range(len(trueRO)):
+        legiCorrRSS.append(abs(pearsonr(trueSample[i], legiSample[i])[0]))
+        inv1CorrRSS.append(abs(pearsonr(trueSample[i], inv1Sample[i])[0]))
+        inv2CorrRSS.append(abs(pearsonr(trueSample[i], inv2Sample[i])[0]))
+
+    savemat(corrMatName, {"legiCorr": legiCorr,
+                          "inv1Corr": inv1Corr,
+                          "inv2Corr": inv2Corr})
+
+    savemat(rssMatName, {"legiCorrRSS": legiCorrRSS,
+                         "inv1CorrRSS": inv1CorrRSS,
+                         "inv2CorrRSS": inv2CorrRSS})
 messagebox.showinfo("提示", "测试结束")

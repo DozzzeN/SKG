@@ -148,7 +148,14 @@ fileName = ["../../data/data_mobile_indoor_1.mat",
 # so1 		 1.0 		 1.0 		 2.0 		 2.0 		 NewHope
 # si1 		 0.9979 	 0.7653 	 2.0 		 1.9959 	 NewHope
 
-isShow = True
+# mi1 		 1.0 		 1.0 		 0.2383 	 0.2383		 NewHope
+# mo1 		 1.0 		 1.0 		 0.2365 	 0.2365		 NewHope
+# so1 		 1.0 		 1.0 		 0.2369 	 0.2369		 NewHope
+# si1 		 0.9861 	 0.7653 	 0.2374 	 0.2341		 NewHope
+#
+# 进程已结束,退出代码0
+
+isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
 for f in fileName:
     # print(f)
@@ -402,13 +409,12 @@ for f in fileName:
         u = poly.add(poly.pointwise(a_prime, s2), e_prime)
         # v = poly.add(poly.invntt(poly.pointwise(b, s2)), e_prime_prime)
         v = poly.add(poly.pointwise(b, s2), e_prime_prime)
-        # v = np.mod(v, 1033)
         r = poly.helprec(v)
         keyb = poly.rec(v, r)
 
         # v_prime = poly.invntt(poly.pointwise(s1, u))
         v_prime = poly.pointwise(s1, u)
-        # v_prime = np.mod(v_prime, 1033)
+        # 32 bytes
         keya = poly.rec(v_prime, r)
 
         # if keya != keyb:
@@ -441,13 +447,20 @@ for f in fileName:
         # print(k)
         # print(k_prime)
 
-        a_list_number = np.tile(keya, int(256 / len(keyb)))
-        b_list_number = np.tile(keyb, int(256 / len(keyb)))
-        e1_list_number = np.random.randint(0, 256, 256)
-        e2_list_number = np.random.randint(0, 256, 256)
-        n1_list_number = np.random.randint(0, 256, 256)
-        n2_list_number = np.random.randint(0, 256, 256)
-        n3_list_number = np.random.randint(0, 256, 256)
+        # a_list_number = np.tile(keya, int(256 / len(keyb)))
+        # b_list_number = np.tile(keyb, int(256 / len(keyb)))
+        # e1_list_number = np.random.randint(0, 256, 256)
+        # e2_list_number = np.random.randint(0, 256, 256)
+        # n1_list_number = np.random.randint(0, 256, 256)
+        # n2_list_number = np.random.randint(0, 256, 256)
+        # n3_list_number = np.random.randint(0, 256, 256)
+        a_list_number = keya
+        b_list_number = keyb
+        e1_list_number = np.random.randint(0, 256, 32)
+        e2_list_number = np.random.randint(0, 256, 32)
+        n1_list_number = np.random.randint(0, 256, 32)
+        n2_list_number = np.random.randint(0, 256, 32)
+        n3_list_number = np.random.randint(0, 256, 32)
 
         minEpiIndClosenessLsb = np.zeros(int(keyLen / segLen), dtype=int)
         minEpiIndClosenessLse1 = np.zeros(int(keyLen / segLen), dtype=int)

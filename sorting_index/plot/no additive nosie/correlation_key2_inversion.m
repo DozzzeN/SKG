@@ -57,7 +57,7 @@ xlabel('\rho(RO,RO^E)', 'FontSize', 15, 'FontWeight','bold')
 ylabel('PDF', 'FontSize',15, 'FontWeight','bold')
 grid on
 
-xlim([-0.1 0.3]);
-ylim([0 12]);
+% xlim([-0.1 0.3]);
+% ylim([0 12]);
 
 print('corrkeys','-depsc')

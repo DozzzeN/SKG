@@ -87,6 +87,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\sorting_index\NewHope2\a_prime.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\sorting_index\adjCorr.csv">
           <value>
             <Attribute>

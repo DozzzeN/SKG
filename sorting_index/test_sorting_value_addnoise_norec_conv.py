@@ -234,6 +234,24 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		0.6587 		0.0 		 1.6 		 1.0539 	 convolve
 # si1 		0.7581 		0.0 		 1.6 		 1.2129 	 convolve
 
+# 样本索引与值分段卷积，再拼成一个向量，无噪音，用value做匹配，安全性好
+# mi1 		0.8219 		0.0 		 1.6 		 1.315 		 convolve
+# mo1 		0.8098 		0.0 		 1.6 		 1.2956 	 convolve
+# so1 		0.741 		0.0 		 1.6 		 1.1857 	 convolve
+# si1 		0.8141 		0.0 		 1.6 		 1.3025 	 convolve
+
+# 样本索引与值分段卷积，再拼成一个向量，无噪音，用index做匹配，安全性好
+# mi1 		0.8481 		0.0 		 1.6 		 1.357 		 convolve
+# mo1 		0.8532 		0.0 		 1.6 		 1.3652 	 convolve
+# so1 		0.7605 		0.0 		 1.6 		 1.2168 	 convolve
+# si1 		0.8413 		0.0 		 1.6 		 1.3461 	 convolve
+
+# 样本索引与值分段卷积，再拼成一个向量，均值滤波，无噪音，用index做匹配，安全性好
+# mi1 		0.9104 		0.0 		 1.6 		 1.4567 	 convolve
+# mo1 		0.9584 		0.2 		 1.6 		 1.5334 	 convolve
+# so1 		0.8655 		0.1176 		 1.6 		 1.3847 	 convolve
+# si1 		0.9374 		0.2083 		 1.6 		 1.4998 	 convolve
+
 isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
 for f in fileName:
@@ -278,18 +296,18 @@ for f in fileName:
     if withoutSort:
         if addNoise == "mul":
             operationMode = "no sorting"
-            print("no sorting")
+            # print("no sorting")
     if withoutSort:
         if addNoise == "":
             operationMode = "no sorting and no perturbation"
-            print("no sorting and no perturbation")
+            # print("no sorting and no perturbation")
     if withoutSort is False:
         if addNoise == "":
             operationMode = "no perturbation"
-            print("no perturbation")
+            # print("no perturbation")
         if addNoise == "mul":
             operationMode = "normal"
-            print("normal")
+            # print("normal")
 
     ab_dist = 0
     ae1_dist = 0
@@ -437,11 +455,42 @@ for f in fileName:
             # tmpCSIe2 = np.matmul(np.power(np.array(tmpCSIe2).argsort().argsort(), powerMatrix), randomMatrix)
 
             operationMode = "convolve"
-            tmpCSIa1 = convolve(tmpCSIa1, np.array(tmpCSIa1).argsort().argsort(), mode='same')
-            tmpCSIb1 = convolve(tmpCSIb1, np.array(tmpCSIb1).argsort().argsort(), mode='same')
-            tmpCSIe1 = convolve(tmpCSIe1, np.array(tmpCSIe1).argsort().argsort(), mode='same')
-            tmpCSIe2 = convolve(tmpCSIe2, np.array(tmpCSIe2).argsort().argsort(), mode='same')
+            segCSIa1 = np.array(tmpCSIa1).reshape(int(keyLen / segLen), segLen)
+            segCSIb1 = np.array(tmpCSIb1).reshape(int(keyLen / segLen), segLen)
+            segCSIe1 = np.array(tmpCSIe1).reshape(int(keyLen / segLen), segLen)
+            segCSIe2 = np.array(tmpCSIe2).reshape(int(keyLen / segLen), segLen)
+            # 对index取模不影响结果
+            # segCSIa1 = convolve(segCSIa1, np.mod(np.array(segCSIa1).argsort().argsort(), int(keyLen / 8)), mode='same')
+            # segCSIb1 = convolve(segCSIb1, np.mod(np.array(segCSIb1).argsort().argsort(), int(keyLen / 8)), mode='same')
+            # segCSIe1 = convolve(segCSIe1, np.mod(np.array(segCSIe1).argsort().argsort(), int(keyLen / 8)), mode='same')
+            # segCSIe2 = convolve(segCSIe2, np.mod(np.array(segCSIe2).argsort().argsort(), int(keyLen / 8)), mode='same')
+            segCSIa1 = convolve(segCSIa1, np.array(segCSIa1).argsort().argsort(), mode='same')
+            segCSIb1 = convolve(segCSIb1, np.array(segCSIb1).argsort().argsort(), mode='same')
+            segCSIe1 = convolve(segCSIe1, np.array(segCSIe1).argsort().argsort(), mode='same')
+            segCSIe2 = convolve(segCSIe2, np.array(segCSIe2).argsort().argsort(), mode='same')
+            tmpCSIa1 = segCSIa1.reshape(keyLen)
+            tmpCSIb1 = segCSIb1.reshape(keyLen)
+            tmpCSIe1 = segCSIe1.reshape(keyLen)
+            tmpCSIe2 = segCSIe2.reshape(keyLen)
+            # 均值滤波
+            tmpCSIa1 = convolve(tmpCSIa1, np.ones(keyLen) / keyLen, mode='same')
+            tmpCSIb1 = convolve(tmpCSIb1, np.ones(keyLen) / keyLen, mode='same')
+            tmpCSIe1 = convolve(tmpCSIe1, np.ones(keyLen) / keyLen, mode='same')
+            tmpCSIe2 = convolve(tmpCSIe2, np.ones(keyLen) / keyLen, mode='same')
 
+            # operationMode = "convolve"
+            # tmpCSIa1 = convolve(tmpCSIa1, np.array(tmpCSIa1).argsort().argsort(), mode='same')
+            # tmpCSIb1 = convolve(tmpCSIb1, np.array(tmpCSIb1).argsort().argsort(), mode='same')
+            # tmpCSIe1 = convolve(tmpCSIe1, np.array(tmpCSIe1).argsort().argsort(), mode='same')
+            # tmpCSIe2 = convolve(tmpCSIe2, np.array(tmpCSIe2).argsort().argsort(), mode='same')
+
+            # plt.figure()
+            # plt.plot(tmpCSIa1)
+            # plt.plot(tmpCSIb1)
+            # plt.plot(tmpCSIe1)
+            # plt.plot(tmpCSIe2)
+            # plt.show()
+            # exit()
             # inference attack
             tmpNoise1 = np.matmul(np.ones(keyLen), randomMatrix)  # 按列求均值
             tmpNoise2 = randomMatrix.mean(axis=1)  # 按行求均值

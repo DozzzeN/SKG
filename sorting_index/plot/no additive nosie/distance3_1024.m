@@ -1,5 +1,5 @@
 clear; close all; clc
-textSize = 14;
+textSize = 16;
 
 % Actual
 % Eavesdropping (n4) IS 256 512 768 1024
@@ -32,8 +32,8 @@ ax.XAxis.FontSize = 14;
 ax.YAxis.FontWeight = 'bold';
 ax.XAxis.FontWeight = 'bold';
 ax.LineWidth = 1;
-ylim([0 1000])
-yticks(0:200:1000)
+ylim([0 1200])
+yticks(0:200:1200)
 % legend('RGA Theo.', 'RGA',...
 %     'InfA', 'ImA', 'SA', ...
 %     'InvA (QP Method)', 'InvA (Iterative Attack)',...

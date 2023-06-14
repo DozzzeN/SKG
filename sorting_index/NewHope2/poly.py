@@ -1,6 +1,7 @@
 import os
 import params, precomp
 import numpy as np
+
 QINV = 12287  # -inverse_mod(p,2^18)
 RLOG = 18
 
@@ -116,6 +117,70 @@ def rec(v_coeffs, c_coeffs):
     return key
 
 
+def recKeyBit(v_coeffs, c_coeffs, index):
+    key = 0
+
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[0] - params.Q * (2 * c_coeffs[0] + c_coeffs[768])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[256] - params.Q * (2 * c_coeffs[256] + c_coeffs[768])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[512] - params.Q * (2 * c_coeffs[512] + c_coeffs[768])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[768] - params.Q * (c_coeffs[768])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (0 & 7)
+    #
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[1] - params.Q * (2 * c_coeffs[1] + c_coeffs[769])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[257] - params.Q * (2 * c_coeffs[257] + c_coeffs[769])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[513] - params.Q * (2 * c_coeffs[513] + c_coeffs[769])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[769] - params.Q * (c_coeffs[769])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (1 & 7)
+    #
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[2] - params.Q * (2 * c_coeffs[2] + c_coeffs[770])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[258] - params.Q * (2 * c_coeffs[258] + c_coeffs[770])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[514] - params.Q * (2 * c_coeffs[514] + c_coeffs[770])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[770] - params.Q * (c_coeffs[770])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (2 & 7)
+    #
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[3] - params.Q * (2 * c_coeffs[3] + c_coeffs[771])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[259] - params.Q * (2 * c_coeffs[259] + c_coeffs[771])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[515] - params.Q * (2 * c_coeffs[515] + c_coeffs[771])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[771] - params.Q * (c_coeffs[771])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (3 & 7)
+    #
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[4] - params.Q * (2 * c_coeffs[4] + c_coeffs[772])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[260] - params.Q * (2 * c_coeffs[260] + c_coeffs[772])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[516] - params.Q * (2 * c_coeffs[516] + c_coeffs[772])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[772] - params.Q * (c_coeffs[772])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (4 & 7)
+    #
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[5] - params.Q * (2 * c_coeffs[5] + c_coeffs[773])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[261] - params.Q * (2 * c_coeffs[261] + c_coeffs[773])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[517] - params.Q * (2 * c_coeffs[517] + c_coeffs[773])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[773] - params.Q * (c_coeffs[773])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (5 & 7)
+    #
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[6] - params.Q * (2 * c_coeffs[6] + c_coeffs[774])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[262] - params.Q * (2 * c_coeffs[262] + c_coeffs[774])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[518] - params.Q * (2 * c_coeffs[518] + c_coeffs[774])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[774] - params.Q * (c_coeffs[774])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (6 & 7)
+    #
+    # keytmp0 = 16 * params.Q + 8 * v_coeffs[7] - params.Q * (2 * c_coeffs[7] + c_coeffs[775])
+    # keytmp1 = 16 * params.Q + 8 * v_coeffs[263] - params.Q * (2 * c_coeffs[263] + c_coeffs[775])
+    # keytmp2 = 16 * params.Q + 8 * v_coeffs[519] - params.Q * (2 * c_coeffs[519] + c_coeffs[775])
+    # keytmp3 = 16 * params.Q + 8 * v_coeffs[775] - params.Q * (c_coeffs[775])
+    # key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << (7 & 7)
+
+    for i in range(0, 8):
+        keytmp0 = 16 * params.Q + 8 * v_coeffs[0 + i + index] - params.Q * (
+                    2 * c_coeffs[0 + i + index] + c_coeffs[768 + i + index])
+        keytmp1 = 16 * params.Q + 8 * v_coeffs[256 + i + index] - params.Q * (
+                    2 * c_coeffs[256 + i + index] + c_coeffs[768 + i + index])
+        keytmp2 = 16 * params.Q + 8 * v_coeffs[512 + i + index] - params.Q * (
+                    2 * c_coeffs[512 + i + index] + c_coeffs[768 + i + index])
+        keytmp3 = 16 * params.Q + 8 * v_coeffs[768 + i + index] - params.Q * (c_coeffs[768 + i + index])
+        key |= LDDecode(keytmp0, keytmp1, keytmp2, keytmp3) << i
+
+    return key
+
+
 def bitrev_vector(coefficients):
     for i in range(0, params.N):
         r = precomp.bitrev_table[i]
@@ -211,6 +276,13 @@ def add(a, b):
     return coefficients
 
 
+def sub(a, b):
+    coefficients = []
+    for i in range(0, params.N):
+        coefficients.append(barrett_reduce(a[i] - b[i]))
+    return coefficients
+
+
 def mul_coefficients(coefficients, factors):
     for i in range(0, params.N):
         coefficients[i] = montgomery_reduce(coefficients[i] * factors[i])
@@ -223,6 +295,16 @@ def montgomery_reduce(a):
     u *= params.Q
     a += u
     return a >> 18
+    # 捕获RuntimeWarning
+    # import warnings
+    # warnings.filterwarnings("error")
+    # try:
+    #     u = a * QINV
+    #     u &= (1 << RLOG) - 1
+    #     u *= params.Q
+    #     a += u
+    # except Warning as e:
+    #     return a >> 18
 
 
 def barrett_reduce(a):

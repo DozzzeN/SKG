@@ -21,7 +21,7 @@ ax.YAxis.FontWeight = 'bold';
 ax.XAxis.FontWeight = 'bold';
 ax.LineWidth = 1;
 ylim([0 3500]);
-xlim([-10 10]);
+xlim([-20 10]);
 xlabel('RSS (dB)', 'FontSize', 15, 'FontWeight','bold')
 ylabel('Frequency', 'FontSize',15, 'FontWeight','bold')
 
@@ -68,7 +68,7 @@ ax.YAxis.FontWeight = 'bold';
 ax.XAxis.FontWeight = 'bold';
 ax.LineWidth = 1;
 ylim([0 3500]);
-xlim([-10 10]);
+xlim([-23 23]);
 xlabel('RSS (dB)', 'FontSize', 15, 'FontWeight','bold')
 ylabel('Frequency', 'FontSize',15, 'FontWeight','bold')
 

@@ -12,6 +12,7 @@ from numpy.fft import fft
 from scipy import signal
 from scipy.fft import dct
 from scipy.io import loadmat
+from scipy.signal import convolve
 from scipy.spatial.distance import directed_hausdorff
 
 
@@ -144,6 +145,30 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # mo1 		 0.9323 		 0.0 		 0.0357 		 0.0333 		 index
 # so1 		 0.9167 		 0.0 		 0.0357 		 0.0327 		 index
 # si1 		 0.9135 		 0.1154 	 0.0357 		 0.0326 		 index
+
+# 发送原始数据的同分布噪音，分段卷积，用value做匹配，安全性好，性能好
+# mi1 		 0.9656 		 0.3 		 0.0357 		 0.0345 		 convolve
+# mo1 		 0.9375 		 0.0 		 0.0357 		 0.0335 		 convolve
+# so1 		 0.944 		     0.25 		 0.0357 		 0.0337 		 convolve
+# si1 		 0.9498 		 0.1923 	 0.0357 		 0.0339 		 convolve
+
+# 发送原始数据的同分布噪音，分段卷积，用index做匹配，安全性好，性能好
+# mi1 		 0.9625 		 0.4 		 0.0357 		 0.0344 		 index
+# mo1 		 0.9115 		 0.0 		 0.0357 		 0.0326 		 index
+# so1 		 0.9557 		 0.3333 	 0.0357 		 0.0341 		 index
+# si1 		 0.9648 		 0.3654 	 0.0357 		 0.0345 		 index
+
+# 发送原始数据的同分布噪音，卷积，用value做匹配，安全性好，性能好
+# mi1 		 0.9922 		 0.7 		 0.0357 		 0.0354 		 convolve
+# mo1 		 0.9688 		 0.3333 	 0.0357 		 0.0346 		 convolve
+# so1 		 0.9883 		 0.5833 	 0.0357 		 0.0353 		 convolve
+# si1 		 0.9817 		 0.6538 	 0.0357 		 0.0351 		 convolve
+
+# 发送原始数据的同分布噪音，卷积，用index做匹配，安全性好，性能好
+# mi1 		 0.9859 		 0.6 		 0.0357 		 0.0352 		 index
+# mo1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 index
+# so1 		 0.9792 		 0.5833 	 0.0357 		 0.035 		     index
+# si1 		 0.9805 		 0.6154 	 0.0357 		 0.035 		     index
 
 isShow = False
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
@@ -292,6 +317,31 @@ for f in fileName:
             # tmpCSIb1 = np.sort(tmpCSIb1)
             # tmpCSIe1 = np.sort(tmpCSIe1)
             # tmpCSIe2 = np.sort(tmpCSIe2)
+
+            # operationMode = "convolve"
+            # segCSIa1 = np.array(tmpCSIa1).reshape(int(keyLen / segLen), segLen)
+            # segCSIb1 = np.array(tmpCSIb1).reshape(int(keyLen / segLen), segLen)
+            # segCSIe1 = np.array(tmpCSIe1).reshape(int(keyLen / segLen), segLen)
+            # segCSIe2 = np.array(tmpCSIe2).reshape(int(keyLen / segLen), segLen)
+            # segCSIa1 = convolve(segCSIa1, np.array(segCSIa1).argsort().argsort(), mode='same')
+            # segCSIb1 = convolve(segCSIb1, np.array(segCSIb1).argsort().argsort(), mode='same')
+            # segCSIe1 = convolve(segCSIe1, np.array(segCSIe1).argsort().argsort(), mode='same')
+            # segCSIe2 = convolve(segCSIe2, np.array(segCSIe2).argsort().argsort(), mode='same')
+            # tmpCSIa1 = segCSIa1.reshape(keyLen)
+            # tmpCSIb1 = segCSIb1.reshape(keyLen)
+            # tmpCSIe1 = segCSIe1.reshape(keyLen)
+            # tmpCSIe2 = segCSIe2.reshape(keyLen)
+            # 均值滤波
+            # tmpCSIa1 = convolve(tmpCSIa1, np.ones(keyLen) / keyLen, mode='same')
+            # tmpCSIb1 = convolve(tmpCSIb1, np.ones(keyLen) / keyLen, mode='same')
+            # tmpCSIe1 = convolve(tmpCSIe1, np.ones(keyLen) / keyLen, mode='same')
+            # tmpCSIe2 = convolve(tmpCSIe2, np.ones(keyLen) / keyLen, mode='same')
+
+            operationMode = "convolve"
+            tmpCSIa1 = convolve(tmpCSIa1, np.array(tmpCSIa1).argsort().argsort(), mode='same')
+            tmpCSIb1 = convolve(tmpCSIb1, np.array(tmpCSIb1).argsort().argsort(), mode='same')
+            tmpCSIe1 = convolve(tmpCSIe1, np.array(tmpCSIe1).argsort().argsort(), mode='same')
+            tmpCSIe2 = convolve(tmpCSIe2, np.array(tmpCSIe2).argsort().argsort(), mode='same')
 
             operationMode = "index"
             tmpCSIa1 = np.array(tmpCSIa1).argsort().argsort()

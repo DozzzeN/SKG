@@ -169,6 +169,7 @@ def ntt(coefficients, omega):
                 jTwiddle += 1
                 temp = coefficients[j]
                 coefficients[j] = temp + coefficients[j + distance]
+                # + 3 * params.Q用于防止减法溢出
                 coefficients[j + distance] = montgomery_reduce(
                     W * (temp + 3 * params.Q - coefficients[j + distance]))
         distance <<= 1

@@ -10,6 +10,7 @@ from numpy.fft import fft
 from scipy import signal
 from scipy.fft import dct
 from scipy.io import loadmat
+from scipy.signal import convolve
 
 
 def smooth(x, window_len=11, window='hanning'):
@@ -148,7 +149,7 @@ fileName = ["../data/data_mobile_indoor_1.mat",
 # so1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 index
 # si1 		 1.0 		     1.0 		 0.0357 		 0.0357 		 index
 
-isShow = False
+isShow = True
 print("file", "\t", "bit", "\t", "key", "\t", "KGR", "\t", "KGR with error free", "\t", "mode")
 for f in fileName:
     # print(f)
@@ -294,6 +295,32 @@ for f in fileName:
             # tmpCSIb1 = np.sort(tmpCSIb1)
             # tmpCSIe1 = np.sort(tmpCSIe1)
             # tmpCSIe2 = np.sort(tmpCSIe2)
+
+            operationMode = "convolve"
+            segCSIa1 = np.array(tmpCSIa1).reshape(int(keyLen / segLen), segLen)
+            segCSIb1 = np.array(tmpCSIb1).reshape(int(keyLen / segLen), segLen)
+            segCSIe1 = np.array(tmpCSIe1).reshape(int(keyLen / segLen), segLen)
+            segCSIe2 = np.array(tmpCSIe2).reshape(int(keyLen / segLen), segLen)
+
+            segCSIa1 = convolve(segCSIa1, np.array(segCSIa1).argsort().argsort(), mode='same')
+            segCSIb1 = convolve(segCSIb1, np.array(segCSIb1).argsort().argsort(), mode='same')
+            segCSIe1 = convolve(segCSIe1, np.array(segCSIe1).argsort().argsort(), mode='same')
+            segCSIe2 = convolve(segCSIe2, np.array(segCSIe2).argsort().argsort(), mode='same')
+
+            tmpCSIa1 = segCSIa1.reshape(keyLen)
+            tmpCSIb1 = segCSIb1.reshape(keyLen)
+            tmpCSIe1 = segCSIe1.reshape(keyLen)
+            tmpCSIe2 = segCSIe2.reshape(keyLen)
+            # tmpCSIa1 = convolve(tmpCSIa1, np.array(tmpCSIa1).argsort().argsort(), mode='same')
+            # tmpCSIb1 = convolve(tmpCSIb1, np.array(tmpCSIb1).argsort().argsort(), mode='same')
+            # tmpCSIe1 = convolve(tmpCSIe1, np.array(tmpCSIe1).argsort().argsort(), mode='same')
+            # tmpCSIe2 = convolve(tmpCSIe2, np.array(tmpCSIe2).argsort().argsort(), mode='same')
+
+            # 均值滤波
+            tmpCSIa1 = convolve(tmpCSIa1, np.ones(keyLen) / keyLen, mode='same')
+            tmpCSIb1 = convolve(tmpCSIb1, np.ones(keyLen) / keyLen, mode='same')
+            tmpCSIe1 = convolve(tmpCSIe1, np.ones(keyLen) / keyLen, mode='same')
+            tmpCSIe2 = convolve(tmpCSIe2, np.ones(keyLen) / keyLen, mode='same')
 
             # operationMode = "index"
             # tmpCSIa1 = np.array(tmpCSIa1).argsort().argsort()
