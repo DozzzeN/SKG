@@ -112,7 +112,7 @@ def normal2uniform(data):
 
 # fileName = ["../data/data_mobile_indoor_1.mat"]
 
-fileName = ["../data/data_static_indoor_1.mat"]
+fileName = ["../data/data_static_outdoor_1.mat"]
 # fileName = ["../data/data_static_outdoor_1_r.mat"]
 
 # fileName = ["../data/data_NLOS.mat"]  # "../data/data3_upto5.mat"就是si
@@ -351,7 +351,7 @@ for f in fileName:
     overhead = 0
 
     # no perturbation
-    withoutSort = False
+    withoutSort = True
     addNoise = "mul"
     codings = ""
     if withoutSort:
@@ -371,8 +371,8 @@ for f in fileName:
     #     dataLen = int(dataLen / 5)
     #     keyLen = int(keyLen / 5)
     #     print(dataLen, keyLen)
-    for staInd in range(0, int(dataLen / 5.5), int(keyLen / 5)):
-    # for staInd in range(0, dataLen, keyLen):
+    # for staInd in range(0, int(dataLen / 5.5), int(keyLen / 5)):
+    for staInd in range(0, dataLen, keyLen):
         start = time.time()
         endInd = staInd + keyLen
         print("range:", staInd, endInd)

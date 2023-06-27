@@ -44,8 +44,6 @@ rawData = loadmat("../data/data_static_indoor_1.mat")
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
-# CSIa1Orig = rawData['A'][:, 0][9000:20000]
-# CSIb1Orig = rawData['A'][:, 1][9000:20000]
 # stalking attack
 CSIe2Orig = loadmat("../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
@@ -89,9 +87,6 @@ for staInd in range(0, int(dataLen / 1), int(keyLen)):
     CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=len(CSIa1Orig))
     # CSIe1Orig = loadmat("../data/data_eave_mobile_1.mat")['A'][:, 0]
 
-    # noiseOrig = np.random.normal(np.mean(CSIa1Orig), np.std(CSIa1Orig), size=len(CSIa1Orig))
-    # noiseOrig = np.random.normal(0, np.std(CSIa1Orig), size=len(CSIa1Orig))
-    # np.random.seed(int(seeds[times - 1][0]))
     seed = np.random.randint(100000)
     np.random.seed(seed)
 
@@ -218,9 +213,9 @@ for staInd in range(0, int(dataLen / 1), int(keyLen)):
         n_list += str(np.random.randint(0, 2))
 
     # print("keys of a:", len(a_list), a_list)
-    print("keys of a:", len(a_list_number), a_list_number)
+    # print("keys of a:", len(a_list_number), a_list_number)
     # print("keys of b:", len(b_list), b_list)
-    print("keys of b:", len(b_list_number), b_list_number)
+    # print("keys of b:", len(b_list_number), b_list_number)
     # print("keys of e:", len(e_list), e_list)
     # print("keys of e:", len(e_list_number), e_list_number)
     # print("keys of n:", len(n_list), n_list)
