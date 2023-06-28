@@ -112,6 +112,7 @@ fileName = ["../data/data_static_indoor_1.mat"]
 # 无纠错
 # si1 normal                        0.9999414063 0.8666666667 1.6666666666666667 1.6665690104166666
 # si1 no sorting with perturbation  0.9999414063 0.8666666667 1.6666666666666667 1.6665690104166666
+# si1 no sorting with permutation   0.9938346354 0.8 1.6666666666666667 1.6563910590277777
 # si1 with segSort & perturbation   0.9999544271 0.9333333333 1.6666666666666667 1.6665907118055554
 # si1 no perturbation with segSort  0.7458854167 0.0 1.6666666666666667 1.2431423611111112
 # si1 no perturbation no sorting    0.6721940104 0.0 1.6666666666666667 1.1203233506944443
@@ -125,6 +126,7 @@ fileName = ["../data/data_static_indoor_1.mat"]
 # 无纠错
 # si1 normal                        1.0 1.0 1.4285714285714286 1.4285714285714286
 # si1 no sorting with perturbation  1.0 1.0 1.4285714285714286 1.4285714285714286
+# si1 no sorting with permutation   0.9948317308 0.8461538462 1.4285714285714286 1.4211881868131868
 # si1 with segSort & perturbation   1.0 1.0 1.4285714285714286 1.4285714285714286
 # si1 no perturbation with segSort  0.7596980168 0.0 1.4285714285714286 1.0852828811813187
 # si1 no perturbation no sorting    0.6842172476 0.0 1.4285714285714286 0.9774532108516484
@@ -138,9 +140,25 @@ fileName = ["../data/data_static_indoor_1.mat"]
 # 无纠错
 # si1 normal                        0.9932107677 0.0434782609 2.5 2.483026919157609
 # si1 no sorting with perturbation  0.9943529212 0.0 2.5 2.4858823029891304
+# si1 no sorting with permutation   0.9765327785 0.0434782609 2.5 2.441331946331522
 # si1 with segSort & perturbation   0.9934060802 0.0 2.5 2.483515200407609
 # si1 no perturbation with segSort  0.6891431726 0.0 2.5 1.7228579313858696
 # si1 no perturbation no sorting    0.6439410666 0.0 2.5 1.6098526664402173
+
+# segLen = 3    keyLen = 1024 * segLen
+# 有纠错
+# si1 normal with segSort           0.9860351563 0.0 3.3333333333333335 3.2867838541666665
+# si1 no sorting with perturbation  0.9883203125 0.0 3.3333333333333335 3.2944010416666667
+# si1 no perturbation with sorting  0.6890397135 0.0 3.3333333333333335 2.2967990451388887
+# si1 no perturbation no sorting    0.6618066406 0.0 3.3333333333333335 2.2060221354166667
+# 无纠错
+# si1 normal with segSort           0.9439746094 0.0 3.3333333333333335 3.14658203125
+# si1 no sorting with perturbation  0.9493684896 0.0 3.3333333333333335 3.1645616319444443
+# si1 no sorting with permutation   0.9341829427 0.0 3.3333333333333335 3.113943142361111
+# si1 with segSort & perturbation   0.9418554688 0.0 3.3333333333333335 3.139518229166667
+# si1 no perturbation with segSort  0.6512109375 0.0 3.3333333333333335 2.1707031249999997
+# si1 no perturbation with shuffle  0.9211783854 0.0 3.3333333333333335 3.0705946180555554
+# si1 no perturbation no sorting    0.6273177083 0.0 3.3333333333333335 2.091059027777778
 
 # segLen = 5    keyLen = 1024 * segLen
 # 有纠错
@@ -152,6 +170,7 @@ fileName = ["../data/data_static_indoor_1.mat"]
 # 无纠错
 # si1 normal                        0.9994411892 0.3333333333 2.0 1.998882378472222
 # si1 no sorting with perturbation  0.9996365017 0.5 2.0 1.9992730034722221
+# si1 no sorting with permutation   0.9914659288 0.3888888889 2.0 1.982931857638889
 # si1 with segSort & perturbation   0.9996419271 0.5 2.0 1.9992838541666669
 # si1 no perturbation with sorting  0.6685167101 0.0 2.0 1.337033420138889
 # si1 no perturbation with shuffle  0.9803548177 0.3333333333 2.0 1.9607096354166669
@@ -230,7 +249,7 @@ rec = False
 # 是否排序
 withoutSorts = [True, False]
 # 是否添加噪声
-addNoises = ["mul"]
+addNoises = ["mul", ""]
 
 for f in fileName:
     for addNoise in addNoises:
@@ -243,7 +262,7 @@ for f in fileName:
             dataLen = len(CSIa1Orig)
             print("dataLen", dataLen)
 
-            segLen = 5
+            segLen = 3
             keyLen = 1024 * segLen
             tell = True
 
@@ -315,15 +334,16 @@ for f in fileName:
                     randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
                     tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
                     tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
-                    # tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
-                    # tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
+                    tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
+                    tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
 
-                    np.random.seed(0)
-                    combineCSIx1Orig = list(zip(tmpCSIa1, tmpCSIb1))
-                    np.random.shuffle(combineCSIx1Orig)
-                    tmpCSIa1, tmpCSIb1 = zip(*combineCSIx1Orig)
-                    tmpCSIa1 = np.array(tmpCSIa1)
-                    tmpCSIb1 = np.array(tmpCSIb1)
+                    # 相当于乘了一个置换矩阵 permutation matrix
+                    # np.random.seed(0)
+                    # combineCSIx1Orig = list(zip(tmpCSIa1, tmpCSIb1))
+                    # np.random.shuffle(combineCSIx1Orig)
+                    # tmpCSIa1, tmpCSIb1 = zip(*combineCSIx1Orig)
+                    # tmpCSIa1 = np.array(tmpCSIa1)
+                    # tmpCSIb1 = np.array(tmpCSIb1)
                 else:
                     tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
                     tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
@@ -354,23 +374,21 @@ for f in fileName:
                     # savemat("sorting.mat",
                     #         {'A': np.array([tmpCSIa1, tmpCSIa1Ind]).T})
 
-                    # exit()
-
                 minEpiIndClosenessLsb = np.zeros(int(keyLen / segLen), dtype=int)
 
                 # with segSort
-                if withoutSort is False:
-                    for i in range(int(keyLen / segLen)):
-                        epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
-                        epiIndb1 = tmpCSIb1Ind[i * segLen:(i + 1) * segLen]
-
-                        np.random.seed(i)
-                        combineEpiIndx1 = list(zip(epiInda1, epiIndb1))
-                        np.random.shuffle(combineEpiIndx1)
-                        epiInda1, epiIndb1 = zip(*combineEpiIndx1)
-
-                        tmpCSIa1Ind[i * segLen:(i + 1) * segLen] = epiInda1
-                        tmpCSIb1Ind[i * segLen:(i + 1) * segLen] = epiIndb1
+                # if withoutSort is False:
+                #     for i in range(int(keyLen / segLen)):
+                #         epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
+                #         epiIndb1 = tmpCSIb1Ind[i * segLen:(i + 1) * segLen]
+                #
+                #         np.random.seed(i)
+                #         combineEpiIndx1 = list(zip(epiInda1, epiIndb1))
+                #         np.random.shuffle(combineEpiIndx1)
+                #         epiInda1, epiIndb1 = zip(*combineEpiIndx1)
+                #
+                #         tmpCSIa1Ind[i * segLen:(i + 1) * segLen] = epiInda1
+                #         tmpCSIb1Ind[i * segLen:(i + 1) * segLen] = epiIndb1
                     # print(pearsonr(tmpCSIa1Ind, tmpCSIb1Ind)[0])
 
                 tmpCSIa1IndReshape = np.array(tmpCSIa1Ind).reshape(int(keyLen / segLen), segLen)
