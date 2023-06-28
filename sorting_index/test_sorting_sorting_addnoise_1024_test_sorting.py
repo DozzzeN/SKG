@@ -308,13 +308,22 @@ for f in fileName:
                 tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
                 tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
 
+                # 目的是把加噪音+无排序的结果降下来
                 if addNoise == "mul":
-                    randomMatrix = np.random.uniform(0, 1, size=(keyLen, keyLen))
-                    # randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
+                    # randomMatrix = np.random.randint(0, 2, size=(keyLen, keyLen))
+                    # randomMatrix = np.random.uniform(0, 1, size=(keyLen, keyLen))
+                    randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
                     tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
                     tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
-                    tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
-                    tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
+                    # tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
+                    # tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
+
+                    np.random.seed(0)
+                    combineCSIx1Orig = list(zip(tmpCSIa1, tmpCSIb1))
+                    np.random.shuffle(combineCSIx1Orig)
+                    tmpCSIa1, tmpCSIb1 = zip(*combineCSIx1Orig)
+                    tmpCSIa1 = np.array(tmpCSIa1)
+                    tmpCSIb1 = np.array(tmpCSIb1)
                 else:
                     tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
                     tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
@@ -345,30 +354,24 @@ for f in fileName:
                     # savemat("sorting.mat",
                     #         {'A': np.array([tmpCSIa1, tmpCSIa1Ind]).T})
 
-                    # plt.figure()
-                    # plt.plot(tmpCSIa1Ind[0:100])
-                    # plt.show()
-                    # plt.figure()
-                    # plt.plot(tmpCSIa1[0:100])
-                    # plt.show()
                     # exit()
 
                 minEpiIndClosenessLsb = np.zeros(int(keyLen / segLen), dtype=int)
 
                 # with segSort
-                # if withoutSort is False:
-                #     for i in range(int(keyLen / segLen)):
-                #         epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
-                #         epiIndb1 = tmpCSIb1Ind[i * segLen:(i + 1) * segLen]
-                #
-                #         np.random.seed(i)
-                #         combineEpiIndx1 = list(zip(epiInda1, epiIndb1))
-                #         np.random.shuffle(combineEpiIndx1)
-                #         epiInda1, epiIndb1 = zip(*combineEpiIndx1)
-                #
-                #         tmpCSIa1Ind[i * segLen:(i + 1) * segLen] = epiInda1
-                #         tmpCSIb1Ind[i * segLen:(i + 1) * segLen] = epiIndb1
-                #     # print(pearsonr(tmpCSIa1Ind, tmpCSIb1Ind)[0])
+                if withoutSort is False:
+                    for i in range(int(keyLen / segLen)):
+                        epiInda1 = tmpCSIa1Ind[i * segLen:(i + 1) * segLen]
+                        epiIndb1 = tmpCSIb1Ind[i * segLen:(i + 1) * segLen]
+
+                        np.random.seed(i)
+                        combineEpiIndx1 = list(zip(epiInda1, epiIndb1))
+                        np.random.shuffle(combineEpiIndx1)
+                        epiInda1, epiIndb1 = zip(*combineEpiIndx1)
+
+                        tmpCSIa1Ind[i * segLen:(i + 1) * segLen] = epiInda1
+                        tmpCSIb1Ind[i * segLen:(i + 1) * segLen] = epiIndb1
+                    # print(pearsonr(tmpCSIa1Ind, tmpCSIb1Ind)[0])
 
                 tmpCSIa1IndReshape = np.array(tmpCSIa1Ind).reshape(int(keyLen / segLen), segLen)
                 permutation = list(range(int(keyLen / segLen)))
