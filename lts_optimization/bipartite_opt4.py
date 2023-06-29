@@ -60,6 +60,8 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     newCSIb1 = []
     newCSIb1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
     for i in range(1, keyLen):
+        start = time.time()
+
         lts_noise = np.ones(intvl)
         cnt = 0
         while True:
@@ -91,6 +93,9 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
                     changed += 1
                 cnt += 1
                 lts_noise = np.random.normal(0, 10, size=intvl)
+
+        overhead = time.time() - start
+        # print("overhead", str(i), ":", overhead)
 
     modifiedCSIa1.extend(newCSIa1)
     modifiedCSIb1.extend(newCSIb1)
