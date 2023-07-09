@@ -101,26 +101,35 @@ def perturbedMatrix(data, M):
 
 # 仿真数据
 # 虽然设置了dataLen，但后续还是用依据A0的长度（40）进行操作，每次只能生成8位密钥
-dataLen = 2400
-SNR = 10
-SA = np.random.normal(0, 1, size=dataLen)
-SB = addNoise(SA, SNR)
-SE = np.random.normal(np.mean(SA), np.std(SA, ddof=1), size=dataLen)
+# dataLen = 2400
+# SNR = 20
+# SA = np.random.normal(0, 1, size=dataLen)
+# SB = addNoise(SA, SNR)
+# SE = np.random.normal(np.mean(SA), np.std(SA, ddof=1), size=dataLen)
 
 # 实验数据
-# dataLen = 240
-# SA = loadmat('rss.mat')['rss'][:, 0]
-# SB = loadmat('rss.mat')['rss'][:, 1]
-# # SE = loadmat('rss.mat')['rss'][:, 2]
-# SE = np.random.normal(np.mean(SB), np.std(SB, ddof=1), size=len(SB))
+dataLen = 240
+SA = loadmat('rss.mat')['rss'][:, 0]
+SB = loadmat('rss.mat')['rss'][:, 1]
+# SE = loadmat('rss.mat')['rss'][:, 2]
+SE = np.random.normal(np.mean(SB), np.std(SB, ddof=1), size=len(SB))
 
 print(pearsonr(SA, SB)[0])
 print(pearsonr(SA, SE)[0])
+
+# SA = np.array(SA).argsort().argsort()
+# SB = np.array(SB).argsort().argsort()
+# SE = np.array(SE).argsort().argsort()
+# print(pearsonr(SA, SB)[0])
+# print(pearsonr(SA, SE)[0])
 
 SA = savgol_filter(SA, 11, 5, axis=0)
 SB = savgol_filter(SB, 11, 5, axis=0)
 SE = savgol_filter(SE, 11, 5, axis=0)
 
+# SA = SA - np.mean(SA)
+# SB = SB - np.mean(SB)
+# SE = SE - np.mean(SE)
 SA = zscore(SA, ddof=1)
 SB = zscore(SB, ddof=1)
 SE = zscore(SE, ddof=1)
@@ -161,7 +170,12 @@ lam = .02  # regularization parameter
 ni = 30  # no. of iterations
 m22 = np.zeros(ni)  # mean-square error
 m22_eve = np.zeros(ni)  # mean-square error
+# 必须固定测量矩阵，或相似分布的测量矩阵
 A0 = loadmat('A0h-gau.mat')['A0'][:, :]
+# A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(int(N / 2), N))
+# A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
+# 不同分布的测量矩阵效果很差
+# A0 = np.random.normal(0, 1, size=(int(N / 2), N))
 
 for j in range(int(dataLen / N)):
     Sa = SA[j * N:(j + 1) * N]
@@ -172,6 +186,7 @@ for j in range(int(dataLen / N)):
     Eb = perturbedMatrix(Sb, N)
     Ee = perturbedMatrix(Se, N)
 
+    # 压缩矩阵复用
     for times in range(10):
         perm = np.random.permutation(len(Ea))
         Sa = Sa[perm]
@@ -193,6 +208,7 @@ for j in range(int(dataLen / N)):
         epsilon_AB1.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
         epsilon_AE1.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
 
+        # KAs = np.random.randint(2, size=N)
         KA = np.random.randint(2, size=int(N / 5))
         KAs = []
 
@@ -337,6 +353,7 @@ print("\033[0;34;40ma-b whole match", correctWholeSum1, "/", originWholeSum1, "=
       round(correctWholeSum1 / originWholeSum1, 10), "\033[0m")
 print("\033[0;34;40ma-e whole match", randomWholeSum1, "/", originWholeSum1, "=",
       round(randomWholeSum1 / originWholeSum1, 10), "\033[0m")
+print("bit generation rate", round(correctSum2 / dataLen, 10))
 print(epsilon_AB1)
 print(epsilon_AE1)
 
@@ -346,5 +363,7 @@ print("\033[0;34;40ma-b whole match", correctWholeSum2, "/", originWholeSum2, "=
       round(correctWholeSum2 / originWholeSum2, 10), "\033[0m")
 print("\033[0;34;40ma-e whole match", randomWholeSum2, "/", originWholeSum2, "=",
       round(randomWholeSum2 / originWholeSum2, 10), "\033[0m")
+print("bit generation rate", round(correctSum2 / dataLen, 10))
 print(epsilon_AB2)
 print(epsilon_AE2)
+
