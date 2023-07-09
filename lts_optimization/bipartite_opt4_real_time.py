@@ -1,14 +1,8 @@
-import sys
 import time
-from tkinter import messagebox
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import exponential as Exp
-from pyentrp import entropy as ent
-from scipy.io import loadmat, savemat
 from scipy.spatial.distance import pdist
-from scipy.stats import pearsonr
 
 from mwmatching import maxWeightMatching
 
@@ -26,80 +20,52 @@ def addNoise(origin, SNR):
 # 方法三：不固定噪音生成的种子，改变噪音（final algorithm）
 # 0.9979910714 0.8 1.0 0.9979910714285715
 
-dataLen = 10000
-SNR = 10
-channel = np.random.normal(0, 1, size=dataLen)
+# 0.9912946429 0.1 1.0 0.9912946428571429
 
-CSIa1Orig = np.array(channel)
+intvl = 10
+def findCSI(epiInda1):
+    SNR = 20
+    intvl = 10
+    keyLen = 128
 
-CSIa1OrigBack = CSIa1Orig.copy()
-
-intvl = 7
-keyLen = 128
-
-overhead = 0
-
-modifiedCSIa1 = []
-modifiedCSIb1 = []
-
-for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
-    endInd = staInd + keyLen * intvl
-    if endInd >= len(CSIa1Orig):
-        break
-
-    tmpCSIa1 = CSIa1OrigBack[range(staInd, endInd, 1)]
-
-    allDists = []
-
+    tmpCSIa1 = []
+    tmpCSIa1.extend(np.random.normal(0, 1, intvl))
     lts = []
 
-    lts.append(np.ones(intvl))
-    changed = 0
-
     newCSIa1 = []
-    newCSIa1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
-    newCSIb1 = []
-    newCSIb1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
-    for i in range(1, keyLen):
-        start = time.time()
 
+    lts.append(np.ones(intvl))
+    for i in range(1, keyLen):
         lts_noise = np.ones(intvl)
-        cnt = 0
+        tmpCSIa1.extend(epiInda1)
         while True:
             rowDists = []
-            epiInda1 = tmpCSIa1[i * intvl: (i + 1) * intvl].copy()
+            # send to Bob
             epiInda1 *= lts_noise
             epiInda1, channel_noise_2 = addNoise(epiInda1, SNR)
             for j in range(0, i):
-                epiInda2 = tmpCSIa1[j * intvl: (j + 1) * intvl].copy()
-                epiInda2, channel_noise_1 = addNoise(epiInda2, SNR)
+                epiInda2 = np.array(tmpCSIa1[j * intvl: (j + 1) * intvl]).copy()
                 epiInda2 *= lts[j]
                 rowDists.append(sum(abs(epiInda1 - epiInda2)))
 
             minDist = min(rowDists)
 
-            epiIndb1 = tmpCSIa1[i * intvl: (i + 1) * intvl].copy()
-            epiIndb1, channel_noise_1 = addNoise(epiIndb1, SNR)
+            epiIndb1 = np.array(tmpCSIa1[i * intvl: (i + 1) * intvl]).copy()
             epiIndb1 *= lts_noise
             threshold = sum(abs(epiInda1 - epiIndb1))
 
             if minDist > 2 * threshold:
-                newCSIa1.extend(addNoise(epiInda1 - channel_noise_2, SNR)[0])
-                newCSIb1.extend(epiIndb1)
+                newCSIa1.extend(epiInda1)
                 lts.append(lts_noise)
                 break
             else:
-                #  记录修改的次数
-                if cnt == 0:
-                    changed += 1
-                cnt += 1
                 lts_noise = np.random.normal(0, 10, size=intvl)
+        print("lts", lts_noise)
+        print("newCSIa1", newCSIa1)
 
-        overhead = time.time() - start
-        # print("overhead", str(i), ":", overhead)
 
-    modifiedCSIa1.extend(newCSIa1)
-    modifiedCSIb1.extend(newCSIb1)
+findCSI(np.random.normal(0, 1, 10))
+exit()
 
 ########################################################################################################################
 
