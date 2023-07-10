@@ -18,57 +18,76 @@ def addNoise(origin, SNR):
 
 
 # 方法三：不固定噪音生成的种子，改变噪音（final algorithm）
-# 0.9979910714 0.8 1.0 0.9979910714285715
+# 1.0 1.0 0.7 0.7
 
-# 0.9912946429 0.1 1.0 0.9912946428571429
-
+SNR = 20
 intvl = 10
-def findCSI(epiInda1):
-    SNR = 20
-    intvl = 10
-    keyLen = 128
+keyLen = 128
 
-    tmpCSIa1 = []
-    tmpCSIa1.extend(np.random.normal(0, 1, intvl))
-    lts = []
+modifiedCSIa1 = []
+modifiedCSIb1 = []
 
+# 收到一个bi的CSI，返回优化后的ai的CSI
+def findCSI(tmpCSIa1, newCSIa1, newCSIb1):
+    lts_noise = np.ones(intvl)
+    while True:
+        rowDists = []
+        # send to Bob: b3 = h2 * lts2 + n3
+        epiInda1 = tmpCSIa1[intvl * (int(len(tmpCSIa1) / intvl) - 1):].copy()
+        epiInda1 *= lts_noise
+        epiInda1, channel_noise_2 = addNoise(epiInda1, SNR)
+        for j in range(int(len(tmpCSIa1) / intvl) - 1):
+            # a1 = (h1 + n1) * lts1
+            epiInda2 = tmpCSIa1[j * intvl: (j + 1) * intvl].copy()
+            epiInda2, channel_noise_1 = addNoise(epiInda2, SNR)
+            epiInda2 *= lts[j]
+            rowDists.append(sum(abs(epiInda1 - epiInda2)))
+
+        minDist = min(rowDists)
+
+        # a3 = (h2 + n3') * lts2
+        epiIndb1 = tmpCSIa1[intvl * (int(len(tmpCSIa1) / intvl) - 1):].copy()
+        epiIndb1, channel_noise_1 = addNoise(epiIndb1, SNR)
+        epiIndb1 *= lts_noise
+        threshold = sum(abs(epiInda1 - epiIndb1))
+
+        if minDist > 2 * threshold:
+            newCSIa1.extend(addNoise(epiInda1 - channel_noise_2, SNR)[0])
+            newCSIb1.extend(epiIndb1)
+            lts.append(lts_noise)
+            break
+        else:
+            lts_noise = np.random.normal(0, 10, size=intvl)
+    # print("lts", lts)
+    # print("newCSIa1", newCSIa1)
+
+for times in range(0, 10):
+    # Alice's CSI before optimization
+    tmpCSIa1 = np.array([])
+    tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, 10))
+    # Alice's CSI after optimization
     newCSIa1 = []
-
+    newCSIa1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
+    # Bob's CSI after optimization
+    newCSIb1 = []
+    newCSIb1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
+    lts = []
     lts.append(np.ones(intvl))
-    for i in range(1, keyLen):
-        lts_noise = np.ones(intvl)
-        tmpCSIa1.extend(epiInda1)
-        while True:
-            rowDists = []
-            # send to Bob
-            epiInda1 *= lts_noise
-            epiInda1, channel_noise_2 = addNoise(epiInda1, SNR)
-            for j in range(0, i):
-                epiInda2 = np.array(tmpCSIa1[j * intvl: (j + 1) * intvl]).copy()
-                epiInda2 *= lts[j]
-                rowDists.append(sum(abs(epiInda1 - epiInda2)))
 
-            minDist = min(rowDists)
+    for i in range(0, keyLen):
+        # Alice receives Bob's CSI
+        tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, 10))
+        start = time.time()
+        findCSI(tmpCSIa1, newCSIa1, newCSIb1)
+        overhead = time.time() - start
+        # print("overhead", str(times), "-", str(i), ":", overhead)
+    modifiedCSIa1.extend(newCSIa1)
+    modifiedCSIb1.extend(newCSIb1)
 
-            epiIndb1 = np.array(tmpCSIa1[i * intvl: (i + 1) * intvl]).copy()
-            epiIndb1 *= lts_noise
-            threshold = sum(abs(epiInda1 - epiIndb1))
+print("modifiedCSIa1", len(modifiedCSIa1))
+print("modifiedCSIb1", len(modifiedCSIb1))
 
-            if minDist > 2 * threshold:
-                newCSIa1.extend(epiInda1)
-                lts.append(lts_noise)
-                break
-            else:
-                lts_noise = np.random.normal(0, 10, size=intvl)
-        print("lts", lts_noise)
-        print("newCSIa1", newCSIa1)
-
-
-findCSI(np.random.normal(0, 1, 10))
-exit()
-
-########################################################################################################################
-
+# bipartite matching-based SKG
 CSIa1Orig = np.array(modifiedCSIa1)
 CSIb1Orig = np.array(modifiedCSIb1)
 

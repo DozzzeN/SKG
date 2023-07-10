@@ -67,10 +67,12 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
         cnt = 0
         while True:
             rowDists = []
+            # send to Bob: b3 = h2 * lts2 + n3
             epiInda1 = tmpCSIa1[i * intvl: (i + 1) * intvl].copy()
             epiInda1 *= lts_noise
             epiInda1, channel_noise_2 = addNoise(epiInda1, SNR)
             for j in range(0, i):
+                # a1 = (h1 + n1) * lts1
                 epiInda2 = tmpCSIa1[j * intvl: (j + 1) * intvl].copy()
                 epiInda2, channel_noise_1 = addNoise(epiInda2, SNR)
                 epiInda2 *= lts[j]
@@ -78,12 +80,14 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
 
             minDist = min(rowDists)
 
+            # a3 = (h2 + n3') * lts2
             epiIndb1 = tmpCSIa1[i * intvl: (i + 1) * intvl].copy()
             epiIndb1, channel_noise_1 = addNoise(epiIndb1, SNR)
             epiIndb1 *= lts_noise
             threshold = sum(abs(epiInda1 - epiIndb1))
 
             if minDist > 2 * threshold:
+                # newCSIa1.extend(epiInda1)
                 newCSIa1.extend(addNoise(epiInda1 - channel_noise_2, SNR)[0])
                 newCSIb1.extend(epiIndb1)
                 lts.append(lts_noise)
