@@ -1,11 +1,14 @@
 import time
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import exponential as Exp
 from scipy.io import loadmat
 from scipy.spatial.distance import pdist
+from scipy.stats import pearsonr
 
 from mwmatching import maxWeightMatching
+from pyentrp import entropy as ent
 
 
 def addNoise(origin, SNR):
@@ -17,85 +20,21 @@ def addNoise(origin, SNR):
     noise = noise * np.sqrt(noise_variance / noise_power)
     return origin + noise, noise
 
-
-# 方法三：不固定噪音生成的种子，改变噪音（final algorithm）
-# 1.0 1.0 0.7 0.7
-
-SNR = 20
-intvl = 10
+intvl = 7
 keyLen = 128
 
-modifiedCSIa1 = []
-modifiedCSIb1 = []
+# 原始数据
+CSIa1Orig = loadmat('../original/CSI_1r.mat')['csi'][:, 0]
+CSIb1Orig = loadmat('../original/CSI_1r.mat')['csi'][:, 1]
+# 扰动数据对齐
+# CSIa1Orig = loadmat('CSI_5_sir.mat')['csi'][:, 0]
+# CSIb1Orig = loadmat('CSI_5_sir.mat')['csi'][:, 1]
+# 扰动数据手动对齐
+# CSIa1Orig = loadmat('CSI_5_si_r_hand.mat')['A'][:, 0]
+# CSIb1Orig = loadmat('CSI_5_si_r_hand.mat')['CSI'][:, 0]
 
-# 收到一个bi的CSI，返回优化后的ai的CSI
-def findCSI(tmpCSIa1, newCSIa1, newCSIb1, lts):
-    lts_noise = np.ones(intvl)
-    while True:
-        rowDists = []
-        # send to Bob: b3 = h2 * lts2 + n3
-        epiInda1 = tmpCSIa1[intvl * (int(len(tmpCSIa1) / intvl) - 1):].copy()
-        epiInda1 *= lts_noise
-        epiInda1, channel_noise_2 = addNoise(epiInda1, SNR)
-        for j in range(int(len(tmpCSIa1) / intvl) - 1):
-            # a1 = (h1 + n1) * lts1
-            epiInda2 = tmpCSIa1[j * intvl: (j + 1) * intvl].copy()
-            epiInda2, channel_noise_1 = addNoise(epiInda2, SNR)
-            epiInda2 *= lts[j]
-            rowDists.append(sum(abs(epiInda1 - epiInda2)))
-
-        minDist = min(rowDists)
-
-        # a3 = (h2 + n3') * lts2
-        epiIndb1 = tmpCSIa1[intvl * (int(len(tmpCSIa1) / intvl) - 1):].copy()
-        epiIndb1, channel_noise_1 = addNoise(epiIndb1, SNR)
-        epiIndb1 *= lts_noise
-        threshold = sum(abs(epiInda1 - epiIndb1))
-
-        if minDist > 2 * threshold:
-            newCSIa1.extend(addNoise(epiInda1 - channel_noise_2, SNR)[0])
-            newCSIb1.extend(epiIndb1)
-            lts.append(lts_noise)
-            break
-        else:
-            # lts range from 1 to 3
-            lts_noise = np.random.uniform(1, 3, size=intvl)
-    # print("lts", lts)
-    # print("newCSIa1", newCSIa1)
-
-for times in range(0, 10):
-    # Alice's CSI before optimization
-    tmpCSIa1 = np.array([])
-    tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, 10))
-    # Alice's CSI after optimization
-    newCSIa1 = []
-    newCSIa1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
-    # Bob's CSI after optimization
-    newCSIb1 = []
-    newCSIb1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
-    lts = []
-    lts.append(np.ones(intvl))
-
-    for i in range(0, keyLen):
-        # Alice receives Bob's CSI
-        tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, 10))
-        start = time.time()
-        findCSI(tmpCSIa1, newCSIa1, newCSIb1, lts)
-        overhead = time.time() - start
-        lts_new = np.divide(newCSIa1[intvl * (int(len(newCSIa1) / intvl) - 1):],
-                            tmpCSIa1[intvl * (int(len(tmpCSIa1) / intvl) - 1):])
-        # print("lts_new", list(lts_new))
-        # print(len(newCSIa1[intvl * (int(len(newCSIa1) / intvl) - 1):].copy()))
-        # print("overhead", str(times), "-", str(i), ":", overhead)
-    modifiedCSIa1.extend(newCSIa1)
-    modifiedCSIb1.extend(newCSIb1)
-
-print("modifiedCSIa1", len(modifiedCSIa1))
-print("modifiedCSIb1", len(modifiedCSIb1))
-
-# bipartite matching-based SKG
-CSIa1Orig = np.array(modifiedCSIa1)
-CSIb1Orig = np.array(modifiedCSIb1)
+for i in range(int(len(CSIa1Orig) / 128 / 7)):
+    print(pearsonr(CSIa1Orig[i * 128 * 7:(i + 1) * 128 * 7], CSIb1Orig[i * 128 * 7:(i + 1) * 128 * 7])[0])
 
 CSIa1OrigBack = CSIa1Orig.copy()
 CSIb1OrigBack = CSIb1Orig.copy()
@@ -111,6 +50,9 @@ overhead = 0
 
 print("topNum", topNum)
 print("sample number", len(CSIa1Orig))
+
+keyA = []
+keyB = []
 
 for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     processTime = time.time()
@@ -219,6 +161,9 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     originWholeSum += 1
     correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
 
+    keyA.extend(a_bits)
+    keyB.extend(b_bits)
+
 print("\033[0;34;40ma-b all", correctSum, "/", originSum, "=", round(correctSum / originSum, 10), "\033[0m")
 print("\033[0;34;40ma-b whole match", correctWholeSum, "/", originWholeSum, "=",
       round(correctWholeSum / originWholeSum, 10), "\033[0m")
@@ -227,3 +172,6 @@ print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum,
       originSum / times / keyLen / intvl,
       correctSum / times / keyLen / intvl)
 # messagebox.showinfo("提示", "测试结束")
+
+print("entropy of a:", ent.shannon_entropy(keyA))
+print("entropy of b:", ent.shannon_entropy(keyB))
