@@ -262,7 +262,7 @@ for f in fileName:
             dataLen = len(CSIa1Orig)
             print("dataLen", dataLen)
 
-            segLen = 3
+            segLen = 4
             keyLen = 1024 * segLen
             tell = True
 
@@ -334,6 +334,8 @@ for f in fileName:
                     randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
                     tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
                     tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
+                    # tmpCSIa1 = (tmpCSIa1 - np.min(tmpCSIa1)) / (np.max(tmpCSIa1) - np.min(tmpCSIa1))
+                    # tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / (np.max(tmpCSIb1) - np.min(tmpCSIb1))
                     tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
                     tmpCSIb1 = np.matmul(tmpCSIb1, randomMatrix)
 
@@ -347,6 +349,8 @@ for f in fileName:
                 else:
                     tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
                     tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
+                    # tmpCSIa1 = (tmpCSIa1 - np.min(tmpCSIa1)) / (np.max(tmpCSIa1) - np.min(tmpCSIa1))
+                    # tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / (np.max(tmpCSIb1) - np.min(tmpCSIb1))
 
                 # 最后各自的密钥
                 a_list = []
