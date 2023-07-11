@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.io import loadmat
+from scipy.linalg import circulant
 from scipy.stats import pearsonr
 from scipy.signal import savgol_filter
 from scipy.stats import zscore
@@ -139,11 +140,6 @@ SA /= eta
 SB /= eta
 SE /= eta
 
-epsilon_AB1 = []
-epsilon_AE1 = []
-epsilon_AB2 = []
-epsilon_AE2 = []
-
 originSum1 = 0
 correctSum1 = 0
 randomSum1 = 0
@@ -182,14 +178,14 @@ for j in range(int(dataLen / N)):
     Sb = SB[j * N:(j + 1) * N]
     Se = SE[j * N:(j + 1) * N]
 
-    Ea = perturbedMatrix(Sa, N)
-    Eb = perturbedMatrix(Sb, N)
-    Ee = perturbedMatrix(Se, N)
+    # Ea = perturbedMatrix(Sa, N)
+    # Eb = perturbedMatrix(Sb, N)
+    # Ee = perturbedMatrix(Se, N)
 
     # 压缩矩阵复用
     for times in range(10):
         np.random.seed(times)
-        perm = np.random.permutation(len(Ea))
+        perm = np.random.permutation(len(Sa))
         Sa = Sa[perm]
         Sb = Sb[perm]
         Se = Se[perm]
@@ -199,19 +195,23 @@ for j in range(int(dataLen / N)):
 
         # Aa = np.matmul(A0, (Ea + np.identity(N)))
         # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        Aa = np.matmul(A0, Ea)
-        Ab = np.matmul(A0, Eb)
+        # Ea = np.matmul(A0, Sa)
+        # Eb = np.matmul(A0, Sb)
+        # Ee = np.matmul(A0, Se)
+        Ea = np.matmul(A0, (Sa + np.identity(N)))
+        Eb = np.matmul(A0, (Sb + np.identity(N)))
+        Ee = np.matmul(A0, (Se + np.identity(N)))
 
-        # A0进行置换
-        # perm = np.random.permutation(len(A0))
-        # A0 = A0[perm]
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        # A0不置换
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        Ae = np.matmul(A0, Ee)
+        Aa = np.array(perturbedMatrix(Ea[:, 0], N)).T
+        Ab = np.array(perturbedMatrix(Eb[:, 0], N)).T
+        Ae = np.array(perturbedMatrix(Ee[:, 0], N)).T
 
-        epsilon_AB1.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
-        epsilon_AE1.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
+        # Aa = circulant(Ea[::-1])
+        # Ab = circulant(Eb[::-1])
+        # Ae = circulant(Ee[::-1])
+        # Aa = np.append(Aa, Aa, axis=1)
+        # Ab = np.append(Ab, Ab, axis=1)
+        # Ae = np.append(Ae, Ae, axis=1)
 
         # KAs = np.random.randint(2, size=N)
         np.random.seed(times)
@@ -291,7 +291,7 @@ for j in range(int(dataLen / N)):
         mismatch_AE = np.bitwise_xor(KAs_de_sparse, KEs_de_sparse)
 
         np.random.seed(times)
-        perm = np.random.permutation(len(Ea))
+        perm = np.random.permutation(len(Sa))
         Sa = Sa[perm]
         Sb = Sb[perm]
         Se = Se[perm]
@@ -301,19 +301,23 @@ for j in range(int(dataLen / N)):
 
         # Aa = np.matmul(A0, (Ea + np.identity(N)))
         # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        Aa = np.matmul(A0, Ea)
-        Ab = np.matmul(A0, Eb)
+        # Ea = np.matmul(A0, Sa)
+        # Eb = np.matmul(A0, Sb)
+        # Ee = np.matmul(A0, Se)
+        Ea = np.matmul(A0, (Sa + np.identity(N)))
+        Eb = np.matmul(A0, (Sb + np.identity(N)))
+        Ee = np.matmul(A0, (Se + np.identity(N)))
 
-        # A0进行置换
-        # perm = np.random.permutation(len(A0))
-        # A0 = A0[perm]
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        # A0不置换
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        Ae = np.matmul(A0, Ee)
+        Aa = np.array(perturbedMatrix(Ea[:, 0], N)).T
+        Ab = np.array(perturbedMatrix(Eb[:, 0], N)).T
+        Ae = np.array(perturbedMatrix(Ee[:, 0], N)).T
 
-        epsilon_AB2.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
-        epsilon_AE2.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
+        # Aa = circulant(Ea[::-1])
+        # Ab = circulant(Eb[::-1])
+        # Ae = circulant(Ee[::-1])
+        # Aa = np.append(Aa, Aa, axis=1)
+        # Ab = np.append(Ab, Ab, axis=1)
+        # Ae = np.append(Ae, Ae, axis=1)
 
         b = np.matmul(Aa, mismatch_AB)
 
@@ -365,8 +369,6 @@ print("\033[0;34;40ma-b whole match", correctWholeSum1, "/", originWholeSum1, "=
 print("\033[0;34;40ma-e whole match", randomWholeSum1, "/", originWholeSum1, "=",
       round(randomWholeSum1 / originWholeSum1, 10), "\033[0m")
 print("bit generation rate", round(correctSum2 / dataLen, 10))
-print(epsilon_AB1)
-print(epsilon_AE1)
 
 print("\033[0;34;40ma-b all", correctSum2, "/", originSum2, "=", round(correctSum2 / originSum2, 10), "\033[0m")
 print("\033[0;34;40ma-e all", randomSum2, "/", originSum2, "=", round(randomSum2 / originSum2, 10), "\033[0m")
@@ -375,6 +377,3 @@ print("\033[0;34;40ma-b whole match", correctWholeSum2, "/", originWholeSum2, "=
 print("\033[0;34;40ma-e whole match", randomWholeSum2, "/", originWholeSum2, "=",
       round(randomWholeSum2 / originWholeSum2, 10), "\033[0m")
 print("bit generation rate", round(correctSum2 / dataLen, 10))
-print(epsilon_AB2)
-print(epsilon_AE2)
-

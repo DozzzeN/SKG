@@ -14,11 +14,13 @@ from scipy.fft import dct
 from scipy.io import loadmat, savemat
 from scipy.linalg import circulant, toeplitz
 from scipy.stats import pearsonr, boxcox, ortho_group
-from scipy.optimize import least_squares, leastsq
+from scipy.optimize import least_squares, leastsq, nnls
 
 import gurobipy as gp
 from gurobipy import GRB
 import logging
+import matlab.engine
+
 
 def smooth(x, window_len=11, window='hanning'):
     # ndim返回数组的维度
@@ -53,6 +55,10 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
+def normalize(data):
+    return (data - np.min(data)) / (np.max(data) - np.min(data))
+
+
 fileName = ["../../data/data_mobile_indoor_1.mat",
             "../../data/data_mobile_outdoor_1.mat",
             "../../data/data_static_outdoor_1.mat",
@@ -66,7 +72,7 @@ withoutSorts = [True, False]
 # 是否添加噪声
 addNoises = ["mul"]
 
-bits = 2
+bits = 1
 
 for f in fileName:
     for addNoise in addNoises:
@@ -80,7 +86,7 @@ for f in fileName:
             print("dataLen", dataLen)
 
             segLen = 1
-            keyLen = 32 * segLen
+            keyLen = 256 * segLen
 
             print("segLen", segLen)
             print("keyLen", keyLen / segLen)
@@ -162,16 +168,16 @@ for f in fileName:
                     # tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
                     # tmpCSIe1 = tmpCSIe1 - np.mean(tmpCSIe1)
 
-                    tmpCSIa1 = (tmpCSIa1 - np.min(tmpCSIa1)) / (np.max(tmpCSIa1) - np.min(tmpCSIa1))
-                    if np.max(tmpCSIb1) - np.min(tmpCSIb1) == 0:
+                    tmpCSIa1 = normalize(tmpCSIa1)
+                    if np.max(tmpCSIb1) == np.min(tmpCSIb1):
                         tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / np.max(tmpCSIb1)
                     else:
-                        tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / (np.max(tmpCSIb1) - np.min(tmpCSIb1))
-                    tmpCSIe1 = (tmpCSIe1 - np.min(tmpCSIe1)) / (np.max(tmpCSIe1) - np.min(tmpCSIe1))
+                        tmpCSIb1 = normalize(tmpCSIb1)
+                    tmpCSIa1 = normalize(tmpCSIa1)
 
-                    tmpCSIa1 = np.abs(np.fft.fft(tmpCSIa1))
-                    tmpCSIb1 = np.abs(np.fft.fft(tmpCSIb1))
-                    tmpCSIe1 = np.abs(np.fft.fft(tmpCSIe1))
+                    # tmpCSIa1 = np.abs(np.fft.fft(tmpCSIa1))
+                    # tmpCSIb1 = np.abs(np.fft.fft(tmpCSIb1))
+                    # tmpCSIe1 = np.abs(np.fft.fft(tmpCSIe1))
 
                     # tmpCSIa1 = dct(tmpCSIa1)
                     # tmpCSIb1 = dct(tmpCSIb1)
@@ -235,13 +241,13 @@ for f in fileName:
                     tmpCSIe1Ind = np.array(tmpCSIe1).argsort().argsort()
 
                     # with shuffling
-                    np.random.seed(0)
-                    combineCSIx1Orig = list(zip(tmpCSIa1Ind, tmpCSIb1Ind, tmpCSIe1Ind))
-                    np.random.shuffle(combineCSIx1Orig)
-                    tmpCSIa1Ind, tmpCSIb1Ind, tmpCSIe1Ind = zip(*combineCSIx1Orig)
-                    tmpCSIa1Ind = list(tmpCSIa1Ind)
-                    tmpCSIb1Ind = list(tmpCSIb1Ind)
-                    tmpCSIe1Ind = list(tmpCSIe1Ind)
+                    # np.random.seed(0)
+                    # combineCSIx1Orig = list(zip(tmpCSIa1Ind, tmpCSIb1Ind, tmpCSIe1Ind))
+                    # np.random.shuffle(combineCSIx1Orig)
+                    # tmpCSIa1Ind, tmpCSIb1Ind, tmpCSIe1Ind = zip(*combineCSIx1Orig)
+                    # tmpCSIa1Ind = list(tmpCSIa1Ind)
+                    # tmpCSIb1Ind = list(tmpCSIb1Ind)
+                    # tmpCSIe1Ind = list(tmpCSIe1Ind)
 
                 np.random.seed(0)
                 if bits == 1:
@@ -258,6 +264,13 @@ for f in fileName:
                 tmpCSIb1IndPerm = circulant(tmpCSIb1Ind[::-1])
                 tmpCSIe1IndPerm = circulant(tmpCSIe1Ind[::-1])
 
+                tmpCSIa1IndPerm = normalize(tmpCSIa1IndPerm)
+                if np.max(tmpCSIb1IndPerm) == np.min(tmpCSIb1IndPerm):
+                    tmpCSIb1IndPerm = (tmpCSIb1IndPerm - np.min(tmpCSIb1IndPerm)) / np.max(tmpCSIb1IndPerm)
+                else:
+                    tmpCSIb1IndPerm = normalize(tmpCSIb1IndPerm)
+                tmpCSIa1IndPerm = normalize(tmpCSIa1IndPerm)
+
                 # 效果差
                 # tmpCSIa1IndPerm = toeplitz(tmpCSIa1Ind[::-1])
                 # tmpCSIb1IndPerm = toeplitz(tmpCSIb1Ind[::-1])
@@ -268,11 +281,28 @@ for f in fileName:
                 # tmpCSIb1IndPerm = np.vstack([tmpCSIb1IndPerm, np.ones(keyLen)]).T
                 # tmpCSIe1IndPerm = np.vstack([tmpCSIe1IndPerm, np.ones(keyLen)]).T
 
-                # def residuals(x, tmpMulA1, tmpCSIx1IndPerm):
-                #     return tmpMulA1 - np.dot(tmpCSIx1IndPerm, x)
-                # a_list_number = leastsq(residuals, np.random.binomial(1, 0.5, keyLen), args=(tmpMulA1, tmpCSIa1IndPerm))[0]
-                # b_list_number = leastsq(residuals, np.random.binomial(1, 0.5, keyLen), args=(tmpMulA1, tmpCSIb1IndPerm))[0]
-                # e_list_number = leastsq(residuals, np.random.binomial(1, 0.5, keyLen), args=(tmpMulA1, tmpCSIe1IndPerm))[0]
+                # least square
+                def residuals(x, tmpMulA1, tmpCSIx1IndPerm):
+                    return tmpMulA1 - np.dot(tmpCSIx1IndPerm, x)
+                a_list_number = leastsq(residuals, np.random.binomial(1, 0.5, keyLen), args=(tmpMulA1, tmpCSIa1IndPerm))[0]
+                b_list_number = leastsq(residuals, np.random.binomial(1, 0.5, keyLen), args=(tmpMulA1, tmpCSIb1IndPerm))[0]
+                e_list_number = leastsq(residuals, np.random.binomial(1, 0.5, keyLen), args=(tmpMulA1, tmpCSIe1IndPerm))[0]
+
+                # non negative least square
+                # a_list_number = nnls(tmpCSIa1IndPerm, tmpMulA1)[0]
+                # b_list_number = nnls(tmpCSIb1IndPerm, tmpMulA1)[0]
+                # e_list_number = nnls(tmpCSIe1IndPerm, tmpMulA1)[0]
+
+                # integer least square
+                # eng = matlab.engine.start_matlab()
+                # Ba = matlab.double(tmpCSIa1IndPerm)
+                # Bb = matlab.double(tmpCSIb1IndPerm)
+                # Be = matlab.double(tmpCSIe1IndPerm)
+                # y = matlab.double(np.array(tmpMulA1).reshape(len(tmpMulA1), 1))
+                # a_list_number = np.array(eng.sils(Ba, y, 1)).reshape(-1)
+                # b_list_number = np.array(eng.sils(Bb, y, 1)).reshape(-1)
+                # e_list_number = np.array(eng.sils(Be, y, 1)).reshape(-1)
+                # eng.exit()
 
                 # # gurobi optimization
                 # vtype = GRB.CONTINUOUS
@@ -331,29 +361,29 @@ for f in fileName:
                 # exit()
 
                 # pulp integer programming
-                problem = pulp.LpProblem("Matrix_Constraint", pulp.LpMinimize)
-                x = [pulp.LpVariable(f'x{i}', lowBound=0, cat=pulp.LpInteger) for i in range(len(keyBin))]
-                problem += pulp.lpSum(x)
-                for i in range(len(tmpMulA1)):
-                    problem += pulp.lpSum([tmpCSIa1IndPerm[i][j] * x[j] for j in range(len(keyBin))]) == tmpMulA1[i]
-                problem.solve(pulp.PULP_CBC_CMD(msg=False))
-                a_list_number = [pulp.value(i) for i in x]
-
-                problem = pulp.LpProblem("Matrix_Constraint", pulp.LpMinimize)
-                x = [pulp.LpVariable(f'x{i}', lowBound=0, cat=pulp.LpInteger) for i in range(len(keyBin))]
-                problem += pulp.lpSum(x)
-                for i in range(len(tmpMulA1)):
-                    problem += pulp.lpSum([tmpCSIb1IndPerm[i][j] * x[j] for j in range(len(keyBin))]) == tmpMulA1[i]
-                problem.solve(pulp.PULP_CBC_CMD(msg=False))
-                b_list_number = [pulp.value(i) for i in x]
-
-                problem = pulp.LpProblem("Matrix_Constraint", pulp.LpMinimize)
-                x = [pulp.LpVariable(f'x{i}', lowBound=0, cat=pulp.LpInteger) for i in range(len(keyBin))]
-                problem += pulp.lpSum(x)
-                for i in range(len(tmpMulA1)):
-                    problem += pulp.lpSum([tmpCSIe1IndPerm[i][j] * x[j] for j in range(len(keyBin))]) == tmpMulA1[i]
-                problem.solve(pulp.PULP_CBC_CMD(msg=False))
-                e_list_number = [pulp.value(i) for i in x]
+                # problem = pulp.LpProblem("Matrix_Constraint", pulp.LpMinimize)
+                # x = [pulp.LpVariable(f'x{i}', lowBound=0, cat=pulp.LpInteger) for i in range(len(keyBin))]
+                # problem += pulp.lpSum(x)
+                # for i in range(len(tmpMulA1)):
+                #     problem += pulp.lpSum([tmpCSIa1IndPerm[i][j] * x[j] for j in range(len(keyBin))]) == tmpMulA1[i]
+                # problem.solve(pulp.PULP_CBC_CMD(msg=False))
+                # a_list_number = [pulp.value(i) for i in x]
+                #
+                # problem = pulp.LpProblem("Matrix_Constraint", pulp.LpMinimize)
+                # x = [pulp.LpVariable(f'x{i}', lowBound=0, cat=pulp.LpInteger) for i in range(len(keyBin))]
+                # problem += pulp.lpSum(x)
+                # for i in range(len(tmpMulA1)):
+                #     problem += pulp.lpSum([tmpCSIb1IndPerm[i][j] * x[j] for j in range(len(keyBin))]) == tmpMulA1[i]
+                # problem.solve(pulp.PULP_CBC_CMD(msg=False))
+                # b_list_number = [pulp.value(i) for i in x]
+                #
+                # problem = pulp.LpProblem("Matrix_Constraint", pulp.LpMinimize)
+                # x = [pulp.LpVariable(f'x{i}', lowBound=0, cat=pulp.LpInteger) for i in range(len(keyBin))]
+                # problem += pulp.lpSum(x)
+                # for i in range(len(tmpMulA1)):
+                #     problem += pulp.lpSum([tmpCSIe1IndPerm[i][j] * x[j] for j in range(len(keyBin))]) == tmpMulA1[i]
+                # problem.solve(pulp.PULP_CBC_CMD(msg=False))
+                # e_list_number = [pulp.value(i) for i in x]
 
                 # pulp regularized perturbed least squares
                 # alpha = 0.2

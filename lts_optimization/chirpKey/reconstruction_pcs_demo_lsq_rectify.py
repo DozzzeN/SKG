@@ -1,8 +1,43 @@
 import numpy as np
 from scipy.io import loadmat
+from scipy.linalg import circulant
+from scipy.optimize import leastsq, nnls
 from scipy.stats import pearsonr
 from scipy.signal import savgol_filter
 from scipy.stats import zscore
+
+
+def smooth(x, window_len=11, window='hanning'):
+    # ndim返回数组的维度
+    if x.ndim != 1:
+        raise (ValueError, "smooth only accepts 1 dimension arrays.")
+
+    if x.size < window_len:
+        raise (ValueError, "Input vector needs to be bigger than window size.")
+
+    if window_len < 3:
+        return x
+
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman', 'kaiser']:
+        raise (ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman', 'kaiser'")
+
+    # np.r_拼接多个数组，要求待拼接的多个数组的列数必须相同
+    # 切片[开始索引:结束索引:步进长度]
+    # 使用算术平均矩阵来平滑数据
+    s = np.r_[x[window_len - 1:0:-1], x, x[-2:-window_len - 1:-1]]
+    # print(len(s))
+    if window == 'flat':  # moving average
+        # 元素为float，返回window_len个1.的数组
+        w = np.ones(window_len, 'd')
+    elif window == 'kaiser':
+        beta = 5
+        w = eval('np.' + window + '(window_len, beta)')
+    else:
+        w = eval('np.' + window + '(window_len)')
+
+    # 进行卷积操作
+    y = np.convolve(w / w.sum(), s, mode='valid')  # 6759
+    return y
 
 
 def wthresh(data, threshold):
@@ -99,6 +134,7 @@ def perturbedMatrix(data, M):
         perturbed.append(row)
     return np.array(perturbed).T
 
+
 # 仿真数据
 # 虽然设置了dataLen，但后续还是用依据A0的长度（40）进行操作，每次只能生成8位密钥
 # dataLen = 2400
@@ -122,6 +158,10 @@ print(pearsonr(SA, SE)[0])
 # SE = np.array(SE).argsort().argsort()
 # print(pearsonr(SA, SB)[0])
 # print(pearsonr(SA, SE)[0])
+
+# SA = smooth(np.array(SA), window_len=30, window='flat')
+# SB = smooth(np.array(SB), window_len=30, window='flat')
+# SE = smooth(np.array(SE), window_len=30, window='flat')
 
 SA = savgol_filter(SA, 11, 5, axis=0)
 SB = savgol_filter(SB, 11, 5, axis=0)
@@ -171,25 +211,26 @@ ni = 30  # no. of iterations
 m22 = np.zeros(ni)  # mean-square error
 m22_eve = np.zeros(ni)  # mean-square error
 # 必须固定测量矩阵，或相似分布的测量矩阵
-A0 = loadmat('A0h-gau.mat')['A0'][:, :]
+# A0 = loadmat('A0h-gau.mat')['A0'][:, :]
 # A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(int(N / 2), N))
+# A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(N, N))
 # A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
-# 不同分布的测量矩阵效果很差
-# A0 = np.random.normal(0, 2, size=(int(N / 2), N))
+np.random.seed(0)
+A0 = np.random.normal(0, 1, size=(N, N))
 
 for j in range(int(dataLen / N)):
     Sa = SA[j * N:(j + 1) * N]
     Sb = SB[j * N:(j + 1) * N]
     Se = SE[j * N:(j + 1) * N]
 
-    Ea = perturbedMatrix(Sa, N)
-    Eb = perturbedMatrix(Sb, N)
-    Ee = perturbedMatrix(Se, N)
+    # Ea = perturbedMatrix(Sa, N)
+    # Eb = perturbedMatrix(Sb, N)
+    # Ee = perturbedMatrix(Se, N)
 
     # 压缩矩阵复用
     for times in range(10):
         np.random.seed(times)
-        perm = np.random.permutation(len(Ea))
+        perm = np.random.permutation(len(Sa))
         Sa = Sa[perm]
         Sb = Sb[perm]
         Se = Se[perm]
@@ -197,65 +238,31 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        # Aa = np.matmul(A0, (Ea + np.identity(N)))
-        # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        Aa = np.matmul(A0, Ea)
-        Ab = np.matmul(A0, Eb)
+        Ea = np.matmul(A0, Sa)
+        Eb = np.matmul(A0, Sb)
+        Ee = np.matmul(A0, Se)
 
-        # A0进行置换
-        # perm = np.random.permutation(len(A0))
-        # A0 = A0[perm]
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        # A0不置换
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        Ae = np.matmul(A0, Ee)
+        Aa = circulant(Ea[::-1])
+        Ab = circulant(Eb[::-1])
+        Ae = circulant(Ee[::-1])
 
-        epsilon_AB1.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
-        epsilon_AE1.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
-
-        # KAs = np.random.randint(2, size=N)
         np.random.seed(times)
-        KA = np.random.randint(2, size=int(N / 5))
-        KAs = []
-
-        for i in range(len(KA)):
-            KAs.append(KA[i])
-            KAs.extend([0, 0, 0, 0])
+        KAs = np.random.randint(2, size=N)
 
         b = np.matmul(Aa, KAs)
+        def residuals(x, Aa, b):
+            return b - np.dot(Aa, x)
+        KAs = leastsq(residuals, np.random.randint(2, size=N), args=(Aa, b))[0]
+        KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
+        KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
 
-        [e23, _, _, KBs] = ass_pg_stls_f(Ab, b, N, K, lam, KAs, ni)
-        [e23_eve, _, _, KEs] = ass_pg_stls_f(Ae, b, N, K, lam, KAs, ni)
-        m22 = m22 + e23
-        m22_eve = m22_eve + e23_eve
+        # KAs = nnls(Aa, b)[0]
+        # KBs = nnls(Ab, b)[0]
+        # KEs = nnls(Ae, b)[0]
 
-        # print(m22)
-        # print(m22_eve)
-
-        KA_de_sparse = []
-        KB_de_sparse = []
-        KE_de_sparse = []
-        for i in range(0, len(KAs), 5):
-            if KAs[i] > 0.5:
-                KA_de_sparse.append(1)
-            elif KAs[i] < -0.5:
-                KA_de_sparse.append(1)
-            else:
-                KA_de_sparse.append(0)
-
-            if KBs[i] > 0.5:
-                KB_de_sparse.append(1)
-            elif KBs[i] < -0.5:
-                KB_de_sparse.append(1)
-            else:
-                KB_de_sparse.append(0)
-
-            if KEs[i] > 0.5:
-                KE_de_sparse.append(1)
-            elif KEs[i] < -0.5:
-                KE_de_sparse.append(1)
-            else:
-                KE_de_sparse.append(0)
+        KA_de_sparse = [round(i) % 2 for i in KAs]
+        KB_de_sparse = [round(i) % 2 for i in KBs]
+        KE_de_sparse = [round(i) % 2 for i in KEs]
 
         sum1 = min(len(KA_de_sparse), len(KB_de_sparse))
         sum2 = 0
@@ -274,24 +281,15 @@ for j in range(int(dataLen / N)):
         randomWholeSum1 = randomWholeSum1 + 1 if sum3 == sum1 else randomWholeSum1
 
         # error correction
-        KAs_de_sparse = []
-        KBs_de_sparse = []
-        KEs_de_sparse = []
-        for i in range(len(KA_de_sparse)):
-            KAs_de_sparse.append(KA_de_sparse[i])
-            KAs_de_sparse.extend([0, 0, 0, 0])
-
-            KBs_de_sparse.append(KB_de_sparse[i])
-            KBs_de_sparse.extend([0, 0, 0, 0])
-
-            KEs_de_sparse.append(KE_de_sparse[i])
-            KEs_de_sparse.extend([0, 0, 0, 0])
+        KAs_de_sparse = KA_de_sparse
+        KBs_de_sparse = KB_de_sparse
+        KEs_de_sparse = KE_de_sparse
 
         mismatch_AB = np.bitwise_xor(KAs_de_sparse, KBs_de_sparse)
         mismatch_AE = np.bitwise_xor(KAs_de_sparse, KEs_de_sparse)
 
         np.random.seed(times)
-        perm = np.random.permutation(len(Ea))
+        perm = np.random.permutation(len(Sa))
         Sa = Sa[perm]
         Sb = Sb[perm]
         Se = Se[perm]
@@ -299,48 +297,24 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        # Aa = np.matmul(A0, (Ea + np.identity(N)))
-        # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        Aa = np.matmul(A0, Ea)
-        Ab = np.matmul(A0, Eb)
+        Ea = np.matmul(A0, Sa)
+        Eb = np.matmul(A0, Sb)
+        Ee = np.matmul(A0, Se)
 
-        # A0进行置换
-        # perm = np.random.permutation(len(A0))
-        # A0 = A0[perm]
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        # A0不置换
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        Ae = np.matmul(A0, Ee)
-
-        epsilon_AB2.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
-        epsilon_AE2.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
+        Aa = circulant(Ea[::-1])
+        Ab = circulant(Eb[::-1])
+        Ae = circulant(Ee[::-1])
 
         b = np.matmul(Aa, mismatch_AB)
 
-        [e23, _, _, KBs] = ass_pg_stls_f(Ab, b, N, K, lam, mismatch_AB, ni)
-        [e23_eve, _, _, KEs] = ass_pg_stls_f(Ae, b, N, K, lam, mismatch_AB, ni)
-        m22 = m22 + e23
-        m22_eve = m22_eve + e23_eve
+        KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
+        KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
 
-        # print(m22)
-        # print(m22_eve)
+        # KBs = nnls(Ab, b)[0]
+        # KEs = nnls(Ae, b)[0]
 
-        KB_de_sparse = []
-        KE_de_sparse = []
-        for i in range(0, len(KAs), 5):
-            if KBs[i] > 0.5:
-                KB_de_sparse.append(1)
-            elif KBs[i] < -0.5:
-                KB_de_sparse.append(1)
-            else:
-                KB_de_sparse.append(0)
-
-            if KEs[i] > 0.5:
-                KE_de_sparse.append(1)
-            elif KEs[i] < -0.5:
-                KE_de_sparse.append(1)
-            else:
-                KE_de_sparse.append(0)
+        KB_de_sparse = [round(i) % 2 for i in KBs]
+        KE_de_sparse = [round(i) % 2 for i in KEs]
 
         sum1 = min(len(mismatch_AB), len(KB_de_sparse))
         sum2 = 0
@@ -365,8 +339,6 @@ print("\033[0;34;40ma-b whole match", correctWholeSum1, "/", originWholeSum1, "=
 print("\033[0;34;40ma-e whole match", randomWholeSum1, "/", originWholeSum1, "=",
       round(randomWholeSum1 / originWholeSum1, 10), "\033[0m")
 print("bit generation rate", round(correctSum2 / dataLen, 10))
-print(epsilon_AB1)
-print(epsilon_AE1)
 
 print("\033[0;34;40ma-b all", correctSum2, "/", originSum2, "=", round(correctSum2 / originSum2, 10), "\033[0m")
 print("\033[0;34;40ma-e all", randomSum2, "/", originSum2, "=", round(randomSum2 / originSum2, 10), "\033[0m")
@@ -375,6 +347,3 @@ print("\033[0;34;40ma-b whole match", correctWholeSum2, "/", originWholeSum2, "=
 print("\033[0;34;40ma-e whole match", randomWholeSum2, "/", originWholeSum2, "=",
       round(randomWholeSum2 / originWholeSum2, 10), "\033[0m")
 print("bit generation rate", round(correctSum2 / dataLen, 10))
-print(epsilon_AB2)
-print(epsilon_AE2)
-
