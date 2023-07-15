@@ -9,6 +9,68 @@ from scipy.stats import pearsonr
 
 from mwmatching import maxWeightMatching
 from pyentrp import entropy as ent
+import EntropyHub as eh
+
+
+def entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres):
+    ts = CSIa1Orig / np.max(CSIa1Orig)
+    # shanon_entropy = ent.shannon_entropy(ts)
+    # perm_entropy = ent.permutation_entropy(ts, order=3, delay=1, normalize=True)
+    # mulperm_entropy = ent.multiscale_permutation_entropy(ts, 3, 1, 1)
+    mul_entropy = ent.multiscale_entropy(ts, 3, maxscale=1)
+    # print(mul_entropy)
+
+    cnts = 0
+    while mul_entropy < entropyThres and cnts < 10:
+        # while mul_entropy < 2.510
+        shuffleInd = np.random.permutation(dataLen)
+        CSIa1Orig = CSIa1Orig[shuffleInd]
+        CSIb1Orig = CSIb1Orig[shuffleInd]
+        # CSIa2Orig = CSIa2Orig[shuffleInd]
+        # CSIb2Orig = CSIb2Orig[shuffleInd]
+
+        ts = CSIa1Orig / np.max(CSIa1Orig)
+        mul_entropy = ent.multiscale_entropy(ts, 4, maxscale=1)
+        cnts += 1
+        # print(mul_entropy[0])
+
+    return CSIa1Orig, CSIb1Orig
+
+
+def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
+    # 先整体shuffle一次
+    shuffleInd = np.random.permutation(dataLen)
+    CSIa1Orig = CSIa1Orig[shuffleInd]
+    CSIb1Orig = CSIb1Orig[shuffleInd]
+
+    sortCSIa1Reshape = CSIa1Orig[0:segLen * int(dataLen / segLen)]
+    sortCSIb1Reshape = CSIb1Orig[0:segLen * int(dataLen / segLen)]
+
+    sortCSIa1Reshape = sortCSIa1Reshape.reshape(int(len(sortCSIa1Reshape) / segLen), segLen)
+    sortCSIb1Reshape = sortCSIb1Reshape.reshape(int(len(sortCSIb1Reshape) / segLen), segLen)
+    n = len(sortCSIa1Reshape)
+
+    for i in range(n):
+        a_mul_entropy = ent.multiscale_entropy(sortCSIa1Reshape[i], 3, maxscale=1)
+
+        cnts = 0
+        while a_mul_entropy < entropyThres and cnts < 10:
+            shuffleInd = np.random.permutation(len(sortCSIa1Reshape[i]))
+            sortCSIa1Reshape[i] = sortCSIa1Reshape[i][shuffleInd]
+            sortCSIb1Reshape[i] = sortCSIb1Reshape[i][shuffleInd]
+
+            a_mul_entropy = ent.multiscale_entropy(sortCSIa1Reshape[i], 3, maxscale=1)
+            cnts += 1
+
+    _CSIa1Orig = []
+    _CSIb1Orig = []
+
+    for i in range(len(sortCSIa1Reshape)):
+        for j in range(len(sortCSIa1Reshape[i])):
+            _CSIa1Orig.append(sortCSIa1Reshape[i][j])
+            _CSIb1Orig.append(sortCSIb1Reshape[i][j])
+
+    return np.array(_CSIa1Orig), np.array(_CSIb1Orig)
 
 
 def addNoise(origin, SNR):
@@ -20,12 +82,13 @@ def addNoise(origin, SNR):
     noise = noise * np.sqrt(noise_variance / noise_power)
     return origin + noise, noise
 
+
 intvl = 7
 keyLen = 128
 
 # 原始数据
-CSIa1Orig = loadmat('../original/CSI_1r.mat')['csi'][:, 0]
-CSIb1Orig = loadmat('../original/CSI_1r.mat')['csi'][:, 1]
+CSIa1Orig = loadmat('../original/mo_r.mat')['A'][:, 0]
+CSIb1Orig = loadmat('../original/mo_r.mat')['CSI'][:, 0]
 # 扰动数据对齐
 # CSIa1Orig = loadmat('CSI_5_sir.mat')['csi'][:, 0]
 # CSIb1Orig = loadmat('CSI_5_sir.mat')['csi'][:, 1]
@@ -36,6 +99,22 @@ CSIb1Orig = loadmat('../original/CSI_1r.mat')['csi'][:, 1]
 for i in range(int(len(CSIa1Orig) / 128 / 7)):
     print(pearsonr(CSIa1Orig[i * 128 * 7:(i + 1) * 128 * 7], CSIb1Orig[i * 128 * 7:(i + 1) * 128 * 7])[0])
 
+dataLen = len(CSIa1Orig)
+print(dataLen)
+CSIb1Orig = CSIb1Orig - (np.mean(CSIb1Orig) - np.mean(CSIa1Orig))
+
+# 固定随机置换的种子
+np.random.seed(1)  # 8 1024 8; 4 128 4
+combineCSIx1Orig = list(zip(CSIa1Orig, CSIb1Orig))
+np.random.shuffle(combineCSIx1Orig)
+CSIa1Orig, CSIb1Orig = zip(*combineCSIx1Orig)
+
+CSIa1Orig = np.array(CSIa1Orig)
+CSIb1Orig = np.array(CSIb1Orig)
+
+entropyThres = 2
+CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 6, dataLen, entropyThres)
+
 CSIa1OrigBack = CSIa1Orig.copy()
 CSIb1OrigBack = CSIb1Orig.copy()
 
@@ -45,7 +124,7 @@ originSum = 0
 correctSum = 0
 originWholeSum = 0
 correctWholeSum = 0
-topNum = 16
+topNum = keyLen
 overhead = 0
 
 print("topNum", topNum)
@@ -173,5 +252,15 @@ print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum,
       correctSum / times / keyLen / intvl)
 # messagebox.showinfo("提示", "测试结束")
 
-print("entropy of a:", ent.shannon_entropy(keyA))
-print("entropy of b:", ent.shannon_entropy(keyB))
+keyListA = []
+keyListB = []
+for i in range(len(keyA)):
+    keyListA.append(int(keyA[i]))
+
+for i in range(len(keyB)):
+    keyListB.append(int(keyB[i]))
+print("entropy of a:", ent.shannon_entropy(keyListA))
+print("entropy of b:", ent.shannon_entropy(keyListB))
+
+print("approx. entropy of a:", eh.ApEn(keyListA)[0][0])
+print("approx. entropy of b:", eh.ApEn(keyListB)[0][0])

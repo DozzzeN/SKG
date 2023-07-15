@@ -13,13 +13,16 @@ def dtw_metric(data1, data2):
     return accelerated_dtw(data1, data2, dist=distance)
 
 
-fileNameA = "./original/CSI_1.mat"
-fileNameB = "./original/CSI_1.mat"
+fileNameA = "./original/CSI_6_mi(1).mat"
+fileNameB = "./original/CSI_6_mi(1).mat"
 
 fileNameR = fileNameA[:fileNameA.find('.mat')] + 'r.mat'
 
-csiA = loadmat(fileNameA)['CSI_a1'].T[0]
-csiB = loadmat(fileNameB)['CSI_b1'].T[0]
+csiA = loadmat(fileNameA)['csi'][:, 0]
+csiB = loadmat(fileNameB)['csi'][:, 1]
+
+# csiA = loadmat(fileNameA)['CSI_a1'].T[0]
+# csiB = loadmat(fileNameB)['CSI_b1'].T[0]
 
 print(len(csiA))
 print(len(csiB))
@@ -59,7 +62,7 @@ for i in range(1, dataLen, splitLen):
     # print(pearsonr(csiAPart, csiBPart)[0])
 
     for j in range(splitLen):
-        if abs(csiAPart[j] - csiBPart[j]) < (max(max(csiAPart), max(csiBPart)) - min(min(csiAPart), min(csiBPart))) / 8:
+        if abs(csiAPart[j] - csiBPart[j]) < (max(max(csiAPart), max(csiBPart)) - min(min(csiAPart), min(csiBPart))) / 4:
             csiAAlign.append(csiAPart[j])
             csiBAlign.append(csiBPart[j])
 
