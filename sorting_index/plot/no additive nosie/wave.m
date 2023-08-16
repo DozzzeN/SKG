@@ -1,6 +1,6 @@
 clear all; close all; clc
 
-load data_mobile_indoor_2.mat
+load ../data_mobile_indoor_2.mat
 
 % Original RSS Sequence
 ind = 2145:2145+19;

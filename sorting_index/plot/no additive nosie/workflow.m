@@ -1,6 +1,6 @@
 clear all; close all; clc
 
-load data_mobile_indoor_2.mat
+load ../data_mobile_indoor_2.mat
 
 noteSize = 35;
 textSize = 35;
