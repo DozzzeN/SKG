@@ -140,7 +140,7 @@ CSIVar = 10
 inrArray = np.array(list(range(dataLen)))
 freq = np.fft.fftfreq(inrArray.shape[-1])
 
-rawData = loadmat('../../data/data_mobile_indoor_1.mat')
+rawData = loadmat('../data/data_mobile_indoor_1.mat')
 # plt.plot(rawData['A'][0:10000, 0])
 # plt.show()
 # exit()
