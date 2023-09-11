@@ -1,6 +1,7 @@
 import poly, params
 import os, hashlib
 
+
 # keygen() is a server-side function that generates the private key and returns
 # a message in the form of a tuple. This message should be encoded using JSON or
 # another portable format and transmitted (over an open channel) to the client.
@@ -14,16 +15,19 @@ def keygen(s_coeffs):
     p_coeffs = poly.add(e_coeffs, r_coeffs)
     return s_coeffs, (p_coeffs, seed)
 
+
 # get_noise() returns a random sampling from a normal distribution in the NTT domain.
 def get_noise():
     noise = poly.get_noise()
     coefficients = poly.poly_ntt(noise)
     return coefficients
 
+
 def get_noise_from_channel(s_coeffs):
     noise = poly.get_noise_from_channel(s_coeffs)
     coefficients = poly.poly_ntt(noise)
     return coefficients
+
 
 # sharedB() is a client-side function that takes the (decoded) message received from
 # the server as an argument. It generates the shared key b_key and returns it, along
@@ -45,6 +49,7 @@ def sharedB(s_coeffs, receivedMsg):
     b_key = poly.rec(v_coeffs, c_coeffs)
     return b_key, (c_coeffs, b_coeffs), v_coeffs
 
+
 # gen_a() returns a list of random coefficients.
 def gen_a(seed):
     hashing_algorithm = hashlib.shake_128()
@@ -59,13 +64,14 @@ def gen_a(seed):
         # Reject coefficients that are greater than or equal to 5*Q:
         while coefficient >= 5 * params.Q:
             coefficient = int.from_bytes(
-                shake_output[j * 2 : j * 2 + 2], byteorder = 'little')
+                shake_output[j * 2: j * 2 + 2], byteorder='little')
             j += 1
             if j * 2 >= len(shake_output):
                 print('Error: Not enough data from SHAKE-128')
                 exit(1)
         output.append(coefficient)
     return output
+
 
 # sharedA() is a server-side function that takes the (decoded) message received
 # from the client as an argument. It generates and returns the shared key a_key.
