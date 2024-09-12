@@ -139,6 +139,7 @@ originWholeSum = 0
 correctWholeSum = 0
 randomWholeSum = 0
 
+# 错误的实现，以reconstruction_demo为准
 for times in range(10):
     N = 128  # length of x
     M = N  # rows of A
@@ -174,6 +175,7 @@ for times in range(10):
     epsilon_AB.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
     epsilon_AE.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
 
+    np.random.seed(times)
     KA = np.random.randint(2, size=N)
     KAs = []
 

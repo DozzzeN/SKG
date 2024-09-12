@@ -2,6 +2,7 @@ import csv
 import math
 import time
 
+import graycode
 import numpy as np
 from pyentrp import entropy as ent
 import scipy.signal
@@ -233,30 +234,17 @@ for staInd in range(0, int(dataLen), keyLen):
     qe2 = []
     qn1 = []
 
-    # 转成二进制，0填充成00
+    # gray码
     for i in range(len(a_list_number)):
-        number = bin(a_list_number[i])[2:].zfill(2)
-        a_list += number
+        a_list += '{:02b}'.format(graycode.tc_to_gray_code(a_list_number[i]))
     for i in range(len(b_list_number)):
-        number = bin(b_list_number[i])[2:].zfill(2)
-        b_list += number
+        b_list += '{:02b}'.format(graycode.tc_to_gray_code(b_list_number[i]))
     for i in range(len(e1_list_number)):
-        number = bin(e1_list_number[i])[2:].zfill(2)
-        e1_list += number
+        e1_list += '{:02b}'.format(graycode.tc_to_gray_code(e1_list_number[i]))
     for i in range(len(e2_list_number)):
-        number = bin(e2_list_number[i])[2:].zfill(2)
-        e2_list += number
+        e2_list += '{:02b}'.format(graycode.tc_to_gray_code(e2_list_number[i]))
     for i in range(len(n1_list_number)):
-        number = bin(n1_list_number[i])[2:].zfill(2)
-        n1_list += number
-
-    # 对齐密钥，随机补全
-    for i in range(len(a_list) - len(e1_list)):
-        e1_list += str(np.random.randint(0, 2))
-    for i in range(len(a_list) - len(e2_list)):
-        e2_list += str(np.random.randint(0, 2))
-    for i in range(len(a_list) - len(n1_list)):
-        n1_list += str(np.random.randint(0, 2))
+        n1_list += '{:02b}'.format(graycode.tc_to_gray_code(n1_list_number[i]))
 
     # print("keys of a:", len(a_list), a_list)
     print("keys of a:", len(a_list_number), a_list_number)

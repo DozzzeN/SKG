@@ -349,7 +349,7 @@ for segLen in range(2, 11):
         for i in range(len(a_list)):
             codings += '{:03b}'.format(graycode.tc_to_gray_code(a_list[i])) + "\n"
 
-    with open('./evaluations//key.txt', 'a', ) as f:
+    with open('./evaluations/key.txt', 'a', ) as f:
         f.write(codings)
 
     print("a-b all", correctSum, "/", originSum, "=", correctSum / originSum)

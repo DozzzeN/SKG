@@ -76,19 +76,53 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
 def addNoise(origin, SNR):
     dataLen = len(origin)
     noise = np.random.normal(0, 1, size=dataLen)
-    signal_power = np.sum(origin ** 2) / dataLen
+    signal_power = np.sum(np.power(origin, 2)) / dataLen
     noise_power = np.sum(noise ** 2) / dataLen
     noise_variance = signal_power / (10 ** (SNR / 10))
     noise = noise * np.sqrt(noise_variance / noise_power)
     return origin + noise, noise
 
 
-intvl = 7
-keyLen = 128
-
+# codingsName = 'mi.txt'
+intvl = 5
+keyLen = 256
 # 原始数据
-CSIa1Orig = loadmat('../original/mo_r.mat')['A'][:, 0]
-CSIb1Orig = loadmat('../original/mo_r.mat')['CSI'][:, 0]
+# fileNames = ["../original/CSI_3_sir_allr.mat",
+#              "../original/CSI_6_mi.mat"]
+# fileNames = ["../original/CSI_3_sir_allr.mat",
+#              "../original/CSI_5_sor(1).mat",
+#              "../original/CSI_5_sor.mat",
+#              "../original/CSI_7_mor.mat",
+#              "../original/CSI_7_mo.mat",
+#              "../original/CSI_6_mir.mat",
+#              "../original/CSI_6_mi.mat"]
+
+# CSIa1Orig = loadmat('../matching/256-4.mat')['CSI'][:, 0]
+# CSIb1Orig = loadmat('../matching/256-4.mat')['A'][:, 0]
+# CSIa1Orig = loadmat(fileName)['csi'][:, 0]
+# CSIb1Orig = loadmat(fileName)['csi'][:, 1]
+# if fileName == "../original/CSI_5_sor(1).mat" or fileName == "../original/CSI_5_sor.mat":
+#     # for CSI_5_sor(1).mat and CSI_5_sor.mat
+#     CSIa1Orig = np.tile(CSIa1Orig, 10)
+#     CSIb1Orig = np.tile(CSIb1Orig, 10)
+
+
+fileNames = ["../matching/sir.mat",
+             "../matching/32-5r.mat",
+             "../matching/64-5r.mat",
+             "../matching/128-5r.mat",  # i.e., mir
+             "../matching/256-4r.mat",
+             "../matching/256-5r(1).mat",
+             "../matching/256-6r(1).mat",
+             "../matching/256-7r(1).mat",
+             "../original/so_r.mat",  # i.e., without contamination sor
+             "../original/mo_r.mat"  # i.e., without contamination mor
+             ]
+CSIa1Orig = loadmat("../original/mo_r.mat")['A'][:, 0]
+CSIb1Orig = loadmat("../original/mo_r.mat")['CSI'][:, 0]
+
+# print(len(CSIa1Orig))
+# exit()
 # 扰动数据对齐
 # CSIa1Orig = loadmat('CSI_5_sir.mat')['csi'][:, 0]
 # CSIb1Orig = loadmat('CSI_5_sir.mat')['csi'][:, 1]
@@ -96,11 +130,31 @@ CSIb1Orig = loadmat('../original/mo_r.mat')['CSI'][:, 0]
 # CSIa1Orig = loadmat('CSI_5_si_r_hand.mat')['A'][:, 0]
 # CSIb1Orig = loadmat('CSI_5_si_r_hand.mat')['CSI'][:, 0]
 
-for i in range(int(len(CSIa1Orig) / 128 / 7)):
-    print(pearsonr(CSIa1Orig[i * 128 * 7:(i + 1) * 128 * 7], CSIb1Orig[i * 128 * 7:(i + 1) * 128 * 7])[0])
+# # 窃听攻击者数据
+# CSIe2Orig = []
+# for j in range(0, len(CSIa1Orig), keyLen * intvl):
+#     CSIe1Orig = []
+#     for i in range(j, j + keyLen * intvl):
+#         if i >= len(CSIa1Orig):
+#             break
+#         if i % (keyLen * intvl) == 0:
+#             prev = CSIb1Orig[j]
+#             # prev = np.random.normal(0, 1)
+#             CSIe1Orig.append(prev)
+#             continue
+#         else:
+#             prev = CSIe1Orig[len(CSIe1Orig) - 1]
+#             # tmp = prev + CSIb1Orig[i] - CSIb1Orig[i - 1]
+#             tmp = prev + list(addNoise([CSIb1Orig[i] - CSIb1Orig[i - 1]], 30)[0])[0]
+#             CSIe1Orig.append(tmp)
+#     CSIe2Orig.extend(CSIe1Orig)
+# CSIb1Orig = np.array(CSIe2Orig)[0:len(CSIa1Orig)]
 
+for i in range(int(len(CSIa1Orig) / keyLen / intvl)):
+    print(pearsonr(CSIa1Orig[i * keyLen * intvl:(i + 1) * keyLen * intvl],
+                   CSIb1Orig[i * keyLen * intvl:(i + 1) * keyLen * intvl])[0])
 dataLen = len(CSIa1Orig)
-print(dataLen)
+# print(dataLen)
 CSIb1Orig = CSIb1Orig - (np.mean(CSIb1Orig) - np.mean(CSIa1Orig))
 
 # 固定随机置换的种子
@@ -113,7 +167,7 @@ CSIa1Orig = np.array(CSIa1Orig)
 CSIb1Orig = np.array(CSIb1Orig)
 
 entropyThres = 2
-CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 6, dataLen, entropyThres)
+CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 3, dataLen, entropyThres)
 
 CSIa1OrigBack = CSIa1Orig.copy()
 CSIb1OrigBack = CSIb1Orig.copy()
@@ -124,8 +178,11 @@ originSum = 0
 correctSum = 0
 originWholeSum = 0
 correctWholeSum = 0
-topNum = keyLen
+topNum = 16
 overhead = 0
+
+# keylen 16
+
 
 print("topNum", topNum)
 print("sample number", len(CSIa1Orig))
@@ -192,7 +249,7 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
 
         if topNum == 1:
             matchSort.append(topInd[0])
-    print("--- processTime %s seconds ---" % (time.time() - processTime))
+    # print("--- processTime %s seconds ---" % (time.time() - processTime))
 
     matchTime = time.time()
 
@@ -201,7 +258,7 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     match = maxWeightMatching(neg_edges, maxcardinality=True)
 
     matchb = [j - permLen for (i, j, wt) in neg_edges if match[i] == j]
-    print("--- matchTime %s seconds ---" % (time.time() - matchTime))
+    # print("--- matchTime %s seconds ---" % (time.time() - matchTime))
 
     overhead += time.time() - start
 
@@ -243,24 +300,33 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     keyA.extend(a_bits)
     keyB.extend(b_bits)
 
+    # codings = ""
+    # for i in range(0, int(len(keyA) / 25) * 25, 25):
+    #     for j in range(25):
+    #         codings += keyA[i + j]
+    #     codings += "\n"
+
+    # with open(codingsName, 'a', ) as f:
+    #     f.write(codings)
+
 print("\033[0;34;40ma-b all", correctSum, "/", originSum, "=", round(correctSum / originSum, 10), "\033[0m")
 print("\033[0;34;40ma-b whole match", correctWholeSum, "/", originWholeSum, "=",
       round(correctWholeSum / originWholeSum, 10), "\033[0m")
 print("times", times)
 print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10),
-      originSum / times / keyLen / intvl,
-      correctSum / times / keyLen / intvl)
+      round(originSum / times / keyLen / intvl, 10),
+      round(correctSum / times / keyLen / intvl, 10))
 # messagebox.showinfo("提示", "测试结束")
+# print("fileName", fileName)
+# keyListA = []
+# keyListB = []
+# for i in range(len(keyA)):
+#     keyListA.append(int(keyA[i]))
 
-keyListA = []
-keyListB = []
-for i in range(len(keyA)):
-    keyListA.append(int(keyA[i]))
-
-for i in range(len(keyB)):
-    keyListB.append(int(keyB[i]))
-print("entropy of a:", ent.shannon_entropy(keyListA))
-print("entropy of b:", ent.shannon_entropy(keyListB))
-
-print("approx. entropy of a:", eh.ApEn(keyListA)[0][0])
-print("approx. entropy of b:", eh.ApEn(keyListB)[0][0])
+# for i in range(len(keyB)):
+#     keyListB.append(int(keyB[i]))
+# print("entropy of a:", ent.shannon_entropy(keyListA))
+# print("entropy of b:", ent.shannon_entropy(keyListB))
+#
+# print("approx. entropy of a:", eh.ApEn(keyListA)[0][0])
+# print("approx. entropy of b:", eh.ApEn(keyListB)[0][0])

@@ -38,7 +38,12 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_static_outdoor_1.mat")
+rawData = loadmat("../../data/data_mobile_outdoor_1.mat")
+# data BMR BGR BGR-with-no-error
+# mi1 0.9047474318 0.08         0.8474218307319837 0.7667027249781074
+# si1 0.6954386591 0.0076628352 0.7800796019900498 0.542497512437811
+# mo1 0.8737017804 0.0          0.7994069681245367 0.6984432913269089
+# so1 0.8987946689 0.0          0.8395221325725494 0.7545580172067936
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -285,3 +290,6 @@ print("times", times)
 print("all bits", lossySum)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
+
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
+      correctSum / len(CSIa1Orig))

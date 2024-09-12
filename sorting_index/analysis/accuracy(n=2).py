@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from scipy.spatial import distance
 import numpy as np
 
-distri = "normal"
+distri = "uniform"
 # episode length
 l = 1
 # number of measurements
@@ -57,6 +57,48 @@ for t in range(times):
     elif z11[t] > z21[t] and z22[t] > z12[t]:
         matches += 1
 print("z11 < z21 and z22 < z12 or z11 > z21 and z22 > z12", matches / times)
+
+matches = 0
+for t in range(times):
+    if y1[t] < x1[t] and x1[t] < x2[t] and x2[t] < y2[t] and z11[t] < z21[t] and z22[t] < z12[t]:
+        matches += 1
+print("y1 < x1 < x2 < y2", matches / times)
+
+matches = 0
+for t in range(times):
+    if y1[t] < x1[t] and x1[t] < y2[t] and y2[t] < x2[t] and z11[t] < z21[t] and z22[t] < z12[t]:
+        matches += 1
+print("y1 < x1 < y2 < x2", matches / times)
+
+matches = 0
+for t in range(times):
+    if x1[t] < y1[t] and y1[t] < x2[t] and x2[t] < y2[t] and z11[t] < z21[t] and z22[t] < z12[t]:
+        matches += 1
+print("x1 < y1 < x2 < y2", matches / times)
+
+matches = 0
+for t in range(times):
+    if x1[t] < y1[t] and y1[t] < y2[t] and y2[t] < x2[t] and z11[t] < z21[t] and z22[t] < z12[t]:
+        matches += 1
+print("x1 < y1 < y2 < x2", matches / times)
+
+matches = 0
+for t in range(times):
+    if x1[t] < y1[t] and y1[t] < x2[t] and x2[t] < y2[t]:
+        matches += 1
+print("x1 < y1 < x2 < y2", matches / times)
+
+matches = 0
+for t in range(times):
+    if 2 * y1[t] < x1[t] + x2[t]:
+        matches += 1
+print("2 * y1 < x1 + x2", matches / times)
+
+matches = 0
+for t in range(times):
+    if 2 * y1[t] < x1[t] + x2[t] and x1[t] < y1[t] and y1[t] < x2[t] and x2[t] < y2[t]:
+        matches += 1
+print("2 * y1 < x1 + x2 and x1 < y1 < x2 < y2", matches / times)
 
 matches = 0
 equ = 0

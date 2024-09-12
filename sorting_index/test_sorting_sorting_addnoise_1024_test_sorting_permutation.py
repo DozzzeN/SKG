@@ -94,7 +94,7 @@ for f in fileName:
             dataLen = len(CSIa1Orig)
             print("dataLen", dataLen)
 
-            segLen = 3
+            segLen = 4
             keyLen = 1024 * segLen
             tell = True
 
@@ -163,7 +163,7 @@ for f in fileName:
                 if addNoise == "mul":
                     # randomMatrix = np.random.randint(0, 2, size=(keyLen, keyLen))
                     # randomMatrix = np.random.uniform(0, 1, size=(keyLen, keyLen))
-                    randomMatrix = np.random.uniform(0, np.std(CSIa1Orig), size=(keyLen, keyLen))
+                    randomMatrix = np.random.uniform(0, np.std(CSIa1Orig) * 4, size=(keyLen, keyLen))
                     tmpCSIa1 = tmpCSIa1 - np.mean(tmpCSIa1)
                     tmpCSIb1 = tmpCSIb1 - np.mean(tmpCSIb1)
                     # tmpCSIa1 = np.matmul(tmpCSIa1, randomMatrix)
@@ -279,6 +279,7 @@ for f in fileName:
                                     epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
                                     epiIndClosenessLsb[j] = sum(abs(epiIndb1 - np.array(epiInda1)))
 
+                                # 第一个找到的错误的，将其距离置为最大，下次找到的就是第二个，作为正确结果
                                 min_b = np.argmin(epiIndClosenessLsb)
                                 epiIndClosenessLsb[min_b] = keyLen * segLen
                                 b_list_number[i] = np.argmin(epiIndClosenessLsb)

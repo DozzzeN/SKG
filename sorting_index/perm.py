@@ -12,7 +12,6 @@ from scipy.spatial.distance import pdist, squareform
 from scipy import signal
 from sklearn import preprocessing
 
-
 import time
 import os
 import sys
@@ -24,7 +23,6 @@ from scipy import sparse, stats
 from scipy.io import loadmat
 from scipy.signal import savgol_filter
 
-
 dataLen = 100000
 CSIMean = 0
 CSIVar = 10
@@ -35,7 +33,7 @@ freq = np.fft.fftfreq(inrArray.shape[-1])
 noiseOrig = np.random.normal(loc=CSIMean, scale=4, size=dataLen)
 
 # CSIOrig = np.random.normal(loc=0, scale=10, size=dataLen)
-CSIOrig = CSIVar*np.sin(np.linspace(-np.pi*2, np.pi*2, dataLen)) + noiseOrig
+CSIOrig = CSIVar * np.sin(np.linspace(-np.pi * 2, np.pi * 2, dataLen)) + noiseOrig
 CSIOrig = savgol_filter(CSIOrig, 5, 1)
 CSIOrigFFT = np.fft.fft(CSIOrig)
 
@@ -44,7 +42,7 @@ CSIOrigFFT = np.fft.fft(CSIOrig)
 # CSIPermFFT = np.fft.fft(CSIPerm)
 
 IndPerm = CSIOrig.argsort().argsort()
-IndPermFFT = np.fft.fft(IndPerm-np.mean(IndPerm))
+IndPermFFT = np.fft.fft(IndPerm - np.mean(IndPerm))
 
 CSIOrig = (CSIOrig - np.min(CSIOrig)) / (np.max(CSIOrig) - np.min(CSIOrig))
 IndPerm = (IndPerm - np.min(IndPerm)) / (np.max(IndPerm) - np.min(IndPerm))
@@ -63,7 +61,7 @@ print(pearsonr(abs(CSIOrigFFT), abs(IndPermFFT))[0])
 CSIOrig2 = CSIOrig * 2
 CSIOrigFFT2 = np.fft.fft(CSIOrig2)
 IndPerm2 = CSIOrig2.argsort().argsort()
-IndPermFFT2 = np.fft.fft(IndPerm2-np.mean(IndPerm2))
+IndPermFFT2 = np.fft.fft(IndPerm2 - np.mean(IndPerm2))
 
 plt.subplot(1, 2, 1)
 plt.plot(CSIOrig)
@@ -91,19 +89,15 @@ exit()
 # plt.plot(freq, abs(CSIPermFFT), 'r-')
 # plt.show() 
 
-plt.subplot(2,  2,  1)
+plt.subplot(2, 2, 1)
 plt.plot(CSIOrig, 'b-')
-plt.subplot(2,  2,  2)
+plt.subplot(2, 2, 2)
 plt.plot(CSIPerm, IndPerm, 'b-')
-
 
 # print(IndPerm)
 
-plt.subplot(2,  2,  3)
+plt.subplot(2, 2, 3)
 plt.plot(abs(CSIOrigFFT), 'r-')
-plt.subplot(2,  2,  4)
+plt.subplot(2, 2, 4)
 plt.plot(abs(IndPermFFT), 'r-')
 plt.show()
-
-
-

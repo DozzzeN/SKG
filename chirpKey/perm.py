@@ -37,7 +37,7 @@ CSIVar = 10
 inrArray = np.array(list(range(dataLen)))   
 freq = np.fft.fftfreq(inrArray.shape[-1])
 
-rawData = loadmat('data_mobile_indoor_1.mat')
+rawData = loadmat('../data/data_mobile_indoor_1.mat')
 # plt.plot(rawData['A'][0:10000, 0])
 # plt.show()
 # exit()
@@ -106,7 +106,7 @@ for ofst in range(0, 10000, 50):
     inds2 = np.digitize(NormalizeData(IndPermP), bins)
     # print(inds1)
     # print(inds2)
-    # print(inds1 - inds2)
+    print(np.count_nonzero(inds1 - inds2))
 
     ## Generated key
     keyBin = np.random.binomial(n=1, p=0.5, size=dataLen)
@@ -122,8 +122,8 @@ for ofst in range(0, 10000, 50):
     ## CSI Modulated key
     CSIOrigMx = circulant(CSIOrig[::-1])
     CSIOrigPMx = circulant(CSIOrigP[::-1])
-    CSIKeyMx = np.dot(IndPermMx,keyBin)
-    CSIKeyMxP = np.dot(IndPermPMx, keyBin)
+    CSIKeyMx = np.dot(CSIOrigMx,keyBin)
+    CSIKeyMxP = np.dot(CSIOrigPMx, keyBin)
 
     # plt.plot(IndKeyMx)
     # plt.plot(IndKeyMxP)

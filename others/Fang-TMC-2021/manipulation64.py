@@ -48,7 +48,12 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_mobile_indoor_1.mat")
+rawData = loadmat("../../data/data_static_indoor_1.mat")
+# data BMR BGR BGR-with-no-error
+# mi1 0.9986111111  0.55            1.186833565136764   1.1851851851851851
+# si1 0.9992867569  0.7579617834    1.1997611940298507  1.198905472636816
+# mo1 0.9952876984  0.1428571429    1.1955522609340252  1.1899184581171238
+# so1 0.996875      0.2285714286    1.198234743458298   1.194490259884991
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -136,6 +141,7 @@ for staInd in range(0, int(dataLen), keyLen):
 
     min_q = sys.maxsize
 
+    # key retrieval
     for i in range(int(keyLen / segLen)):
         for j in range(1, segLen):
             min_q = min(min_q, abs(tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0]))
@@ -291,3 +297,6 @@ print("times", times)
 print("all bits", lossySum)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
+
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
+      correctSum / len(CSIa1Orig))

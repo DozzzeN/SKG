@@ -22,8 +22,8 @@ def addNoise(origin, SNR):
 # 1.0 1.0 0.7 0.7
 
 SNR = 20
-intvl = 10
-keyLen = 128
+intvl = 5
+keyLen = 256
 
 modifiedCSIa1 = []
 modifiedCSIb1 = []
@@ -66,7 +66,7 @@ def findCSI(tmpCSIa1, newCSIa1, newCSIb1, lts):
 for times in range(0, 10):
     # Alice's CSI before optimization
     tmpCSIa1 = np.array([])
-    tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, 10))
+    tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, intvl))
     # Alice's CSI after optimization
     newCSIa1 = []
     newCSIa1.extend(addNoise(tmpCSIa1[0: intvl], SNR)[0])
@@ -78,7 +78,7 @@ for times in range(0, 10):
 
     for i in range(0, keyLen):
         # Alice receives Bob's CSI
-        tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, 10))
+        tmpCSIa1 = np.append(tmpCSIa1, np.random.normal(0, 1, intvl))
         start = time.time()
         findCSI(tmpCSIa1, newCSIa1, newCSIb1, lts)
         overhead = time.time() - start

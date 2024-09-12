@@ -2,6 +2,7 @@ import csv
 import math
 import time
 
+import graycode
 import numpy as np
 from pyentrp import entropy as ent
 import scipy.signal
@@ -14,6 +15,14 @@ from scipy.spatial import distance
 from scipy.stats import pearsonr, boxcox
 from sklearn.decomposition import PCA
 
+
+def common_pca(ha, k):
+    ha = (ha - np.min(ha)) / (np.max(ha) - np.min(ha))
+    rha = np.dot(ha, ha.T) / len(ha)
+    ua, sa, vha = np.linalg.svd(rha)
+    vha = vha[:k, :]
+    ya = vha @ ha
+    return np.array(ya)
 
 def smooth(x, window_len=11, window='hanning'):
     # ndim返回数组的维度
@@ -66,12 +75,6 @@ randomSum1 = 0
 randomSum2 = 0
 noiseSum1 = 0
 
-originDecSum = 0
-correctDecSum = 0
-randomDecSum1 = 0
-randomDecSum2 = 0
-noiseDecSum1 = 0
-
 originWholeSum = 0
 correctWholeSum = 0
 randomWholeSum1 = 0
@@ -120,6 +123,17 @@ for staInd in range(0, int(dataLen), keyLen):
     tmpCSIe1Reshape = np.array(tmpCSIe1).reshape(int(keyLen / segLen), segLen)
     tmpCSIe2Reshape = np.array(tmpCSIe2).reshape(int(keyLen / segLen), segLen)
     tmpCSIn1Reshape = np.array(tmpCSIn1).reshape(int(keyLen / segLen), segLen)
+
+    # tmpCSIa1Reshape1 = common_pca(tmpCSIa1Reshape, int(0.999 * len(tmpCSIa1Reshape[0])))
+    # tmpCSIb1Reshape1 = common_pca(tmpCSIb1Reshape, int(0.999 * len(tmpCSIb1Reshape[0])))
+    # tmpCSIe1Reshape1 = common_pca(tmpCSIe1Reshape, int(0.999 * len(tmpCSIe1Reshape[0])))
+    # tmpCSIe2Reshape1 = common_pca(tmpCSIe2Reshape, int(0.999 * len(tmpCSIe2Reshape[0])))
+    # tmpCSIn1Reshape1 = common_pca(tmpCSIn1Reshape, int(0.999 * len(tmpCSIn1Reshape[0])))
+    # tmpCSIa1Reshape1 = tmpCSIa1Reshape1.reshape(1, -1)[0]
+    # tmpCSIb1Reshape1 = tmpCSIb1Reshape1.reshape(1, -1)[0]
+    # tmpCSIe1Reshape1 = tmpCSIe1Reshape1.reshape(1, -1)[0]
+    # tmpCSIe2Reshape1 = tmpCSIe2Reshape1.reshape(1, -1)[0]
+    # tmpCSIn1Reshape1 = tmpCSIn1Reshape1.reshape(1, -1)[0]
 
     # transform
     eta = 0.999
@@ -227,30 +241,17 @@ for staInd in range(0, int(dataLen), keyLen):
     qe2 = []
     qn1 = []
 
-    # 转成二进制，0填充成00
+    # gray码
     for i in range(len(a_list_number)):
-        number = bin(a_list_number[i])[2:].zfill(2)
-        a_list += number
+        a_list += '{:02b}'.format(graycode.tc_to_gray_code(a_list_number[i]))
     for i in range(len(b_list_number)):
-        number = bin(b_list_number[i])[2:].zfill(2)
-        b_list += number
+        b_list += '{:02b}'.format(graycode.tc_to_gray_code(b_list_number[i]))
     for i in range(len(e1_list_number)):
-        number = bin(e1_list_number[i])[2:].zfill(2)
-        e1_list += number
+        e1_list += '{:02b}'.format(graycode.tc_to_gray_code(e1_list_number[i]))
     for i in range(len(e2_list_number)):
-        number = bin(e2_list_number[i])[2:].zfill(2)
-        e2_list += number
+        e2_list += '{:02b}'.format(graycode.tc_to_gray_code(e2_list_number[i]))
     for i in range(len(n1_list_number)):
-        number = bin(n1_list_number[i])[2:].zfill(2)
-        n1_list += number
-
-    # 对齐密钥，随机补全
-    for i in range(len(a_list) - len(e1_list)):
-        e1_list += str(np.random.randint(0, 2))
-    for i in range(len(a_list) - len(e2_list)):
-        e2_list += str(np.random.randint(0, 2))
-    for i in range(len(a_list) - len(n1_list)):
-        n1_list += str(np.random.randint(0, 2))
+        n1_list += '{:02b}'.format(graycode.tc_to_gray_code(n1_list_number[i]))
 
     # print("keys of a:", len(a_list), a_list)
     print("keys of a:", len(a_list_number), a_list_number)
@@ -289,35 +290,6 @@ for staInd in range(0, int(dataLen), keyLen):
     randomSum2 += sum32
     noiseSum1 += sum41
 
-    # decSum1 = min(len(a_list_number), len(b_list_number))
-    # decSum2 = 0
-    # decSum31 = 0
-    # decSum32 = 0
-    # decSum41 = 0
-    # for i in range(0, decSum1):
-    #     decSum2 += (a_list_number[i] == b_list_number[i])
-    # for i in range(min(len(a_list_number), len(e1_list_number))):
-    #     decSum31 += (a_list_number[i] == e1_list_number[i])
-    # for i in range(min(len(a_list_number), len(e2_list_number))):
-    #     decSum32 += (a_list_number[i] == e2_list_number[i])
-    # for i in range(min(len(a_list_number), len(n1_list_number))):
-    #     decSum41 += (a_list_number[i] == n1_list_number[i])
-    # if decSum1 == 0:
-    #     continue
-    # if decSum2 == decSum1:
-    #     print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
-    # else:
-    #     print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
-    # print("a-e1", decSum31, decSum31 / decSum1)
-    # print("a-e2", decSum32, decSum32 / decSum1)
-    # print("a-n1", decSum41, decSum41 / decSum1)
-    # print("----------------------")
-    # originDecSum += decSum1
-    # correctDecSum += decSum2
-    # randomDecSum1 += decSum31
-    # randomDecSum2 += decSum32
-    # noiseDecSum1 += decSum41
-
     originWholeSum += 1
     correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
     randomWholeSum1 = randomWholeSum1 + 1 if sum31 == sum1 else randomWholeSum1
@@ -329,11 +301,6 @@ print("\033[0;32;40ma-b bit agreement rate", correctSum, "/", originSum, "=", ro
 print("a-e1 bit agreement rate", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))
 print("a-e2 bit agreement rate", randomSum2, "/", originSum, "=", round(randomSum2 / originSum, 10))
 print("a-n1 bit agreement rate", noiseSum1, "/", originSum, "=", round(noiseSum1 / originSum, 10))
-# print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
-#       round(correctDecSum / originDecSum, 10), "\033[0m")
-# print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
-# print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
-# print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
 print("\033[0;32;40ma-b key agreement rate", correctWholeSum, "/", originWholeSum, "=",
       round(correctWholeSum / originWholeSum, 10), "\033[0m")
 print("a-e1 key agreement rate", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))

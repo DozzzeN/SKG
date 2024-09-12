@@ -211,13 +211,21 @@ ni = 30  # no. of iterations
 m22 = np.zeros(ni)  # mean-square error
 m22_eve = np.zeros(ni)  # mean-square error
 # 必须固定测量矩阵，或相似分布的测量矩阵
-# A0 = loadmat('A0h-gau.mat')['A0'][:, :]
+A0 = loadmat('A0h-gau.mat')['A0'][:, :]
 # A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(int(N / 2), N))
-# A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(N, N))
-# A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
 np.random.seed(0)
-A0 = np.random.normal(0, 1, size=(N, N))
+A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(N, N))
+# A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
+# np.random.seed(0)
+# A0 = np.random.normal(0, 1, size=(N, N))
 
+isNonNegative = False
+
+# 原始方法有漏洞，密钥主要由A0决定
+isOriginMethod = True
+
+# 是否置换A0
+isPermuteA0 = True
 for j in range(int(dataLen / N)):
     Sa = SA[j * N:(j + 1) * N]
     Sb = SB[j * N:(j + 1) * N]
@@ -238,27 +246,51 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        Ea = np.matmul(A0, Sa)
-        Eb = np.matmul(A0, Sb)
-        Ee = np.matmul(A0, Se)
+        # 先乘矩阵
+        if isOriginMethod:
+            # 纵向copy成N*N的矩阵
+            Ea = np.matmul(A0, (np.tile(Sa, (N, 1)) + np.identity(N)))
+            Eb = np.matmul(A0, (np.tile(Sb, (N, 1)) + np.identity(N)))
+        else:
+            Ea = np.matmul(A0, Sa)
+            Eb = np.matmul(A0, Sb)
 
-        Aa = circulant(Ea[::-1])
-        Ab = circulant(Eb[::-1])
-        Ae = circulant(Ee[::-1])
+        # A0进行置换
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
+        # A0不置换
+        if isOriginMethod:
+            Ee = np.matmul(A0, (np.tile(Se, (N, 1)) + np.identity(N)))
+        else:
+            Ee = np.matmul(A0, Se)
+
+        # 后循环
+        if isOriginMethod:
+            # 仅使用Ea的第一列数据
+            Aa = circulant(Ea[:, 0])
+            Ab = circulant(Eb[:, 0])
+            Ae = circulant(Ee[:, 0])
+        else:
+            Aa = circulant(Ea[::-1])
+            Ab = circulant(Eb[::-1])
+            Ae = circulant(Ee[::-1])
 
         np.random.seed(times)
         KAs = np.random.randint(2, size=N)
 
         b = np.matmul(Aa, KAs)
-        def residuals(x, Aa, b):
-            return b - np.dot(Aa, x)
-        KAs = leastsq(residuals, np.random.randint(2, size=N), args=(Aa, b))[0]
-        KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
-        KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
 
-        # KAs = nnls(Aa, b)[0]
-        # KBs = nnls(Ab, b)[0]
-        # KEs = nnls(Ae, b)[0]
+        if isNonNegative:
+            KAs = nnls(Aa, b)[0]
+            KBs = nnls(Ab, b)[0]
+            KEs = nnls(Ae, b)[0]
+        else:
+            def residuals(x, Aa, b):
+                return b - np.dot(Aa, x)
+            KAs = leastsq(residuals, np.random.randint(2, size=N), args=(Aa, b))[0]
+            KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
+            KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
 
         KA_de_sparse = [round(i) % 2 for i in KAs]
         KB_de_sparse = [round(i) % 2 for i in KBs]
@@ -297,21 +329,47 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        Ea = np.matmul(A0, Sa)
-        Eb = np.matmul(A0, Sb)
-        Ee = np.matmul(A0, Se)
+        # 先乘矩阵
+        if isOriginMethod:
+            # 纵向copy成N*N的矩阵
+            Ea = np.matmul(A0, (np.tile(Sa, (N, 1)) + np.identity(N)))
+            Eb = np.matmul(A0, (np.tile(Sb, (N, 1)) + np.identity(N)))
+        else:
+            Ea = np.matmul(A0, Sa)
+            Eb = np.matmul(A0, Sb)
 
-        Aa = circulant(Ea[::-1])
-        Ab = circulant(Eb[::-1])
-        Ae = circulant(Ee[::-1])
+        # A0进行置换
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
+        # A0不置换
+        if isOriginMethod:
+            Ee = np.matmul(A0, (np.tile(Se, (N, 1)) + np.identity(N)))
+        else:
+            Ee = np.matmul(A0, Se)
+
+        # 后循环
+        if isOriginMethod:
+            # 仅使用Ea的第一列数据
+            Aa = circulant(Ea[:, 0])
+            Ab = circulant(Eb[:, 0])
+            Ae = circulant(Ee[:, 0])
+        else:
+            Aa = circulant(Ea[::-1])
+            Ab = circulant(Eb[::-1])
+            Ae = circulant(Ee[::-1])
+
 
         b = np.matmul(Aa, mismatch_AB)
 
-        KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
-        KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
-
-        # KBs = nnls(Ab, b)[0]
-        # KEs = nnls(Ae, b)[0]
+        if isNonNegative:
+            KBs = nnls(Ab, b)[0]
+            KEs = nnls(Ae, b)[0]
+        else:
+            def residuals(x, Aa, b):
+                return b - np.dot(Aa, x)
+            KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
+            KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
 
         KB_de_sparse = [round(i) % 2 for i in KBs]
         KE_de_sparse = [round(i) % 2 for i in KEs]

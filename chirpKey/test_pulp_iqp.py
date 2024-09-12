@@ -1,9 +1,11 @@
 import pulp
 import numpy as np
 
+# 利用线性规划库pulp求解带扰动的最小二乘法
 # 定义矩阵A和向量y
 A = np.array([[2, 3], [1, 4], [3, 2]])
-y = np.array([5, 6, 7])
+s = np.array([1, 2])
+y = np.array([8, 9, 7])
 
 # 创建问题实例
 problem = pulp.LpProblem("Matrix_Constraint", pulp.LpMinimize)
@@ -29,3 +31,5 @@ print("Optimal solution:")
 for i in range(n):
     print(x[i].name, "=", pulp.value(x[i]))
 print("Objective value:", pulp.value(problem.objective))
+x = np.array([round(pulp.value(x[i])) for i in range(n)])
+print(np.sum(np.abs(x - s)))

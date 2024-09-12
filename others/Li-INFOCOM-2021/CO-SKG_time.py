@@ -2,6 +2,7 @@ import csv
 import math
 import time
 
+import graycode
 import numpy as np
 from pyentrp import entropy as ent
 import scipy.signal
@@ -48,7 +49,7 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_static_outdoor_1.mat")
+rawData = loadmat("../../data/data_static_indoor_1.mat")
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -56,7 +57,10 @@ CSIb1Orig = rawData['A'][:, 1]
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
-segLen = 6
+# 5*8为64bit密钥
+# 5*8 6*16 7*32 8*64 9*128 10*256
+# 64 160 384 896 2048 4608
+segLen = 10
 keyLen = 256 * segLen
 
 lossySum = 0
@@ -149,16 +153,44 @@ for staInd in range(0, int(dataLen), keyLen):
     e2_list_number = []
     n1_list_number = []
 
-    alpha = 0
+    alpha = 0.2
     for i in range(len(tmpCSIa1Reshape)):
         q1A1 = np.mean(tmpCSIa1Reshape[i]) + alpha * np.std(tmpCSIa1Reshape[i])
-        q2A1 = np.mean(tmpCSIa1Reshape[i]) - alpha * np.std(tmpCSIa1Reshape[i])
+        q2A1 = np.mean(tmpCSIa1Reshape[i])
+        q3A1 = np.mean(tmpCSIa1Reshape[i]) - alpha * np.std(tmpCSIa1Reshape[i])
+
+        guard = 0.08
+        drops = []
+        for j in range(len(tmpCSIa1Reshape[0])):
+            if tmpCSIa1Reshape[i][j] > q1A1 + guard:
+                pass
+            elif tmpCSIa1Reshape[i][j] > q2A1 + guard and tmpCSIa1Reshape[i][j] < q1A1 - guard:
+                pass
+            elif tmpCSIa1Reshape[i][j] > q3A1 + guard and tmpCSIa1Reshape[i][j] < q2A1 - guard:
+                pass
+            elif tmpCSIa1Reshape[i][j] < q3A1 - guard:
+                pass
+            else:
+                drops.append(j)
 
         for j in range(len(tmpCSIa1Reshape[0])):
-            if tmpCSIa1Reshape[i][j] > q1A1:
-                a_list_number.append(1)
-            if tmpCSIa1Reshape[i][j] < q2A1:
+            if j in drops:
+                continue
+            elif tmpCSIa1Reshape[i][j] > q1A1 + guard:
                 a_list_number.append(0)
+            elif tmpCSIa1Reshape[i][j] > q2A1 + guard and tmpCSIa1Reshape[i][j] < q1A1 - guard:
+                a_list_number.append(1)
+            elif tmpCSIa1Reshape[i][j] > q3A1 + guard and tmpCSIa1Reshape[i][j] < q2A1 - guard:
+                a_list_number.append(2)
+            elif tmpCSIa1Reshape[i][j] < q3A1 - guard:
+                a_list_number.append(3)
+
+    # gray码
+    for i in range(len(a_list_number)):
+        a_list += '{:02b}'.format(graycode.tc_to_gray_code(a_list_number[i]))
+
+    print("keys of a:", len(a_list), a_list)
+    print("keys of a:", len(a_list_number), a_list_number)
 
     end_time = time.time() - start_time
     print("time", round(end_time, 9))

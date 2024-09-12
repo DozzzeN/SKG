@@ -54,16 +54,17 @@ def filtering(data, step, window):
     return res
 
 
-rawData = loadmat("../../data/data_static_outdoor_1.mat")
+rawData = loadmat("../../data/data_static_indoor_1.mat")
 
-CSIa1Orig = rawData['A'][:, 0]
-CSIb1Orig = rawData['A'][:, 1]
+CSIa1Orig = np.tile(rawData['A'][:, 0], 10)
+CSIb1Orig = np.tile(rawData['A'][:, 1], 10)
 # stalking attack
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
-segLen = 6
-keyLen = 256 * segLen
+# 194*5*1 193*6*2 192*7*4 192*8*8 194*9*16
+# 近似对应于5*32 6*64 7*128 8*256 9*512位密钥
+keyLen = int(192 * 9 * 16)
 
 step = 4
 window = 8
@@ -90,8 +91,8 @@ times = 0
 overhead = 0
 
 for staInd in range(0, int(dataLen), keyLen):
-    CSIa1Orig = rawData['A'][:, 0][0: dataLen]
-    CSIb1Orig = rawData['A'][:, 1][0: dataLen]
+    CSIa1Orig = np.tile(rawData['A'][:, 0], 10)[0: dataLen]
+    CSIb1Orig = np.tile(rawData['A'][:, 1], 10)[0: dataLen]
 
     endInd = staInd + keyLen
     print("range:", staInd, endInd)
@@ -149,6 +150,7 @@ for staInd in range(0, int(dataLen), keyLen):
         else:
             a_list_number.append(0)
 
+    print("a_list_number", len(a_list_number), a_list_number)
     end_time = time.time() - start_time
     print("time", round(end_time, 9))
     overhead += end_time

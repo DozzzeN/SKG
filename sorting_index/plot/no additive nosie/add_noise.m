@@ -13,6 +13,7 @@ rssb = A(:,2);
 figure(1)
 % histogram(rssa - mean(rssa));
 histogram(rssa - mean(rssa), bin);
+var(rssa)
 hold on
 ax = gca;
 ax.YAxis.FontSize = 14;
@@ -49,7 +50,7 @@ addrssa = (rssa - mean(rssa)) + addnoise;
 % xlabel('RSS (dB)', 'FontSize', 15, 'FontWeight','bold')
 % ylabel('Frequency', 'FontSize',15, 'FontWeight','bold')
 % 
-% print('addHist','-depsc')
+print('addHist','-depsc')
 
 % RIC-SKGm
 step = 1;
@@ -60,6 +61,7 @@ mulrssa = (rssa - mean(rssa))' * mulnoise;
 figure(3)
 histogram(mulrssa, bin);
 % histogram(mulrssa);
+var(mulrssa)
 hold on
 ax = gca;
 ax.YAxis.FontSize = 14;

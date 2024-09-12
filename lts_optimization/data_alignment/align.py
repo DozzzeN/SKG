@@ -13,16 +13,16 @@ def dtw_metric(data1, data2):
     return accelerated_dtw(data1, data2, dist=distance)
 
 
-fileNameA = "./original/CSI_6_mi(1).mat"
-fileNameB = "./original/CSI_6_mi(1).mat"
+fileNameA = "./matching/256-4.mat"
+fileNameB = "./matching/256-4.mat"
 
 fileNameR = fileNameA[:fileNameA.find('.mat')] + 'r.mat'
 
-csiA = loadmat(fileNameA)['csi'][:, 0]
-csiB = loadmat(fileNameB)['csi'][:, 1]
+# csiA = loadmat(fileNameA)['csi'][:, 0]
+# csiB = loadmat(fileNameB)['csi'][:, 1]
 
-# csiA = loadmat(fileNameA)['CSI_a1'].T[0]
-# csiB = loadmat(fileNameB)['CSI_b1'].T[0]
+csiA = loadmat(fileNameA)['CSI'].T[0]
+csiB = loadmat(fileNameB)['A'].T[0]
 
 print(len(csiA))
 print(len(csiB))

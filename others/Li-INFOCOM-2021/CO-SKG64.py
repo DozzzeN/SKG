@@ -2,6 +2,7 @@ import csv
 import math
 import time
 
+import graycode
 import numpy as np
 from pyentrp import entropy as ent
 import scipy.signal
@@ -48,7 +49,14 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_static_outdoor_1.mat")
+rawData = loadmat("../../data/data_static_indoor_1.mat")
+# data BMR BGR BGR-with-no-error
+# mi1 0.9960797842  0.58            1.6425075980013393  1.6360686138154845
+# si1 0.9919726422  0.3180076628    1.6585074626865672  1.6451940298507464
+# mo1 0.9545789571  0.0             1.6091919940696813  1.5361008154188287
+# so1 0.994835046   0.2931034483    1.64846431596309    1.639950073552356
+# average BMR: 1-(0.9960797842+0.9919726422+0.9545789571+0.994835046)/4=0.015633392625000075
+# average BGR: (1.6360686138154845+1.6451940298507464+1.5361008154188287+1.639950073552356)/4=1.614328383159354
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -65,12 +73,6 @@ correctSum = 0
 randomSum1 = 0
 randomSum2 = 0
 noiseSum1 = 0
-
-originDecSum = 0
-correctDecSum = 0
-randomDecSum1 = 0
-randomDecSum2 = 0
-noiseDecSum1 = 0
 
 originWholeSum = 0
 correctWholeSum = 0
@@ -176,25 +178,58 @@ for staInd in range(0, int(dataLen), keyLen):
         q2E2 = np.mean(tmpCSIe2Reshape[i])
         q3E2 = np.mean(tmpCSIe2Reshape[i]) - alpha * np.std(tmpCSIe2Reshape[i])
 
+        guard = 0.05
+        drops = []
         for j in range(len(tmpCSIa1Reshape[0])):
-            if tmpCSIa1Reshape[i][j] > q1A1:
+            if tmpCSIa1Reshape[i][j] > q1A1 + guard:
+                pass
+            elif tmpCSIa1Reshape[i][j] > q2A1 + guard and tmpCSIa1Reshape[i][j] < q1A1 - guard:
+                pass
+            elif tmpCSIa1Reshape[i][j] > q3A1 + guard and tmpCSIa1Reshape[i][j] < q2A1 - guard:
+                pass
+            elif tmpCSIa1Reshape[i][j] < q3A1 - guard:
+                pass
+            else:
+                drops.append(j)
+
+            if tmpCSIb1Reshape[i][j] > q1B1 + guard:
+                pass
+            elif tmpCSIb1Reshape[i][j] > q2B1 + guard and tmpCSIb1Reshape[i][j] < q1B1 - guard:
+                pass
+            elif tmpCSIb1Reshape[i][j] > q3B1 + guard and tmpCSIb1Reshape[i][j] < q2B1 - guard:
+                pass
+            elif tmpCSIb1Reshape[i][j] < q3B1 - guard:
+                pass
+            else:
+                drops.append(j)
+
+        for j in range(len(tmpCSIa1Reshape[0])):
+            if j in drops:
+                continue
+            elif tmpCSIa1Reshape[i][j] > q1A1 + guard:
                 a_list_number.append(0)
-            elif tmpCSIa1Reshape[i][j] > q2A1:
+            elif tmpCSIa1Reshape[i][j] > q2A1 + guard and tmpCSIa1Reshape[i][j] < q1A1 - guard:
                 a_list_number.append(1)
-            elif tmpCSIa1Reshape[i][j] > q3A1:
+            elif tmpCSIa1Reshape[i][j] > q3A1 + guard and tmpCSIa1Reshape[i][j] < q2A1 - guard:
                 a_list_number.append(2)
-            elif tmpCSIa1Reshape[i][j] < q3A1:
+            elif tmpCSIa1Reshape[i][j] < q3A1 - guard:
                 a_list_number.append(3)
 
-            if tmpCSIb1Reshape[i][j] > q1B1:
+        for j in range(len(tmpCSIb1Reshape[0])):
+            if j in drops:
+                continue
+            elif tmpCSIb1Reshape[i][j] > q1B1 + guard:
                 b_list_number.append(0)
-            elif tmpCSIb1Reshape[i][j] > q2B1:
+            elif tmpCSIb1Reshape[i][j] > q2B1 + guard and tmpCSIb1Reshape[i][j] < q1B1 - guard:
                 b_list_number.append(1)
-            elif tmpCSIb1Reshape[i][j] > q3B1:
+            elif tmpCSIb1Reshape[i][j] > q3B1 + guard and tmpCSIb1Reshape[i][j] < q2B1 - guard:
                 b_list_number.append(2)
-            elif tmpCSIb1Reshape[i][j] < q3B1:
+            elif tmpCSIb1Reshape[i][j] < q3B1 - guard:
                 b_list_number.append(3)
 
+        for j in range(len(tmpCSIe1Reshape[0])):
+            if j in drops:
+                continue
             if tmpCSIe1Reshape[i][j] > q1E1:
                 e1_list_number.append(0)
             elif tmpCSIe1Reshape[i][j] > q2E1:
@@ -204,6 +239,9 @@ for staInd in range(0, int(dataLen), keyLen):
             elif tmpCSIe1Reshape[i][j] < q3E1:
                 e1_list_number.append(3)
 
+        for j in range(len(tmpCSIe2Reshape[0])):
+            if j in drops:
+                continue
             if tmpCSIe2Reshape[i][j] > q1E2:
                 e2_list_number.append(0)
             elif tmpCSIe2Reshape[i][j] > q2E2:
@@ -213,6 +251,9 @@ for staInd in range(0, int(dataLen), keyLen):
             elif tmpCSIe2Reshape[i][j] < q3E2:
                 e2_list_number.append(3)
 
+        for j in range(len(tmpCSIn1Reshape[0])):
+            if j in drops:
+                continue
             if tmpCSIn1Reshape[i][j] > q1N1:
                 n1_list_number.append(0)
             elif tmpCSIn1Reshape[i][j] > q2N1:
@@ -228,30 +269,17 @@ for staInd in range(0, int(dataLen), keyLen):
     qe2 = []
     qn1 = []
 
-    # 转成二进制，0填充成00
+    # gray码
     for i in range(len(a_list_number)):
-        number = bin(a_list_number[i])[2:].zfill(2)
-        a_list += number
+        a_list += '{:02b}'.format(graycode.tc_to_gray_code(a_list_number[i]))
     for i in range(len(b_list_number)):
-        number = bin(b_list_number[i])[2:].zfill(2)
-        b_list += number
+        b_list += '{:02b}'.format(graycode.tc_to_gray_code(b_list_number[i]))
     for i in range(len(e1_list_number)):
-        number = bin(e1_list_number[i])[2:].zfill(2)
-        e1_list += number
+        e1_list += '{:02b}'.format(graycode.tc_to_gray_code(e1_list_number[i]))
     for i in range(len(e2_list_number)):
-        number = bin(e2_list_number[i])[2:].zfill(2)
-        e2_list += number
+        e2_list += '{:02b}'.format(graycode.tc_to_gray_code(e2_list_number[i]))
     for i in range(len(n1_list_number)):
-        number = bin(n1_list_number[i])[2:].zfill(2)
-        n1_list += number
-
-    # 对齐密钥，随机补全
-    for i in range(len(a_list) - len(e1_list)):
-        e1_list += str(np.random.randint(0, 2))
-    for i in range(len(a_list) - len(e2_list)):
-        e2_list += str(np.random.randint(0, 2))
-    for i in range(len(a_list) - len(n1_list)):
-        n1_list += str(np.random.randint(0, 2))
+        n1_list += '{:02b}'.format(graycode.tc_to_gray_code(n1_list_number[i]))
 
     # print("keys of a:", len(a_list), a_list)
     print("keys of a:", len(a_list_number), a_list_number)
@@ -290,35 +318,6 @@ for staInd in range(0, int(dataLen), keyLen):
     randomSum2 += sum32
     noiseSum1 += sum41
 
-    decSum1 = min(len(a_list_number), len(b_list_number))
-    decSum2 = 0
-    decSum31 = 0
-    decSum32 = 0
-    decSum41 = 0
-    for i in range(0, decSum1):
-        decSum2 += (a_list_number[i] == b_list_number[i])
-    for i in range(min(len(a_list_number), len(e1_list_number))):
-        decSum31 += (a_list_number[i] == e1_list_number[i])
-    for i in range(min(len(a_list_number), len(e2_list_number))):
-        decSum32 += (a_list_number[i] == e2_list_number[i])
-    for i in range(min(len(a_list_number), len(n1_list_number))):
-        decSum41 += (a_list_number[i] == n1_list_number[i])
-    if decSum1 == 0:
-        continue
-    if decSum2 == decSum1:
-        print("\033[0;32;40ma-b dec", decSum2, decSum2 / decSum1, "\033[0m")
-    else:
-        print("\033[0;31;40ma-b dec", "bad", decSum2, decSum2 / decSum1, "\033[0m")
-    print("a-e1", decSum31, decSum31 / decSum1)
-    print("a-e2", decSum32, decSum32 / decSum1)
-    print("a-n1", decSum41, decSum41 / decSum1)
-    print("----------------------")
-    originDecSum += decSum1
-    correctDecSum += decSum2
-    randomDecSum1 += decSum31
-    randomDecSum2 += decSum32
-    noiseDecSum1 += decSum41
-
     originWholeSum += 1
     correctWholeSum = correctWholeSum + 1 if sum2 == sum1 else correctWholeSum
     randomWholeSum1 = randomWholeSum1 + 1 if sum31 == sum1 else randomWholeSum1
@@ -330,11 +329,6 @@ print("\033[0;32;40ma-b bit agreement rate", correctSum, "/", originSum, "=", ro
 print("a-e1 bit agreement rate", randomSum1, "/", originSum, "=", round(randomSum1 / originSum, 10))
 print("a-e2 bit agreement rate", randomSum2, "/", originSum, "=", round(randomSum2 / originSum, 10))
 print("a-n1 bit agreement rate", noiseSum1, "/", originSum, "=", round(noiseSum1 / originSum, 10))
-print("\033[0;32;40ma-b dec agreement rate", correctDecSum, "/", originDecSum, "=",
-      round(correctDecSum / originDecSum, 10), "\033[0m")
-print("a-e1 dec agreement rate", randomDecSum1, "/", originDecSum, "=", round(randomDecSum1 / originDecSum, 10))
-print("a-e2 dec agreement rate", randomDecSum2, "/", originDecSum, "=", round(randomDecSum2 / originDecSum, 10))
-print("a-n1 dec agreement rate", noiseDecSum1, "/", originDecSum, "=", round(noiseDecSum1 / originDecSum, 10))
 print("\033[0;32;40ma-b key agreement rate", correctWholeSum, "/", originWholeSum, "=",
       round(correctWholeSum / originWholeSum, 10), "\033[0m")
 print("a-e1 key agreement rate", randomWholeSum1, "/", originWholeSum, "=", round(randomWholeSum1 / originWholeSum, 10))

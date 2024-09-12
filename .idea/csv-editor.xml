@@ -3,13 +3,6 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="D:\Anaconda3\Lib\site-packages\bokeh\sampledata\_data\auto-mpg2.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\correlation\csi1.csv">
           <value>
             <Attribute>
@@ -17,7 +10,21 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\correlation\csi11.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\correlation\csi2.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\correlation\csi22.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -109,6 +116,20 @@
           </value>
         </entry>
         <entry key="\sorting_index\uniform.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\tree_sort\corr.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\tree_sort\entropy.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

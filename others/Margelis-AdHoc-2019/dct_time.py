@@ -48,8 +48,8 @@ dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
 CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
 
-segLen = 5
-keyLen = 512 * segLen
+segLen = 1
+keyLen = 128 * segLen
 
 originSum = 0
 correctSum = 0
@@ -146,4 +146,4 @@ for staInd in range(0, dataLen, keyLen):
     overhead += end_time
 
 print("times", times)
-print("overhead", round(overhead / times, 9))
+print("overhead", round(overhead / times, 9) * 1000, "ms")

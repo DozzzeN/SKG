@@ -8,6 +8,8 @@ from scipy.spatial.distance import pdist
 
 from mwmatching import maxWeightMatching
 from RandomWayPoint import RandomWayPoint
+
+
 def entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres):
     ts = CSIa1Orig / np.max(CSIa1Orig)
     # shanon_entropy = ent.shannon_entropy(ts)
@@ -67,6 +69,8 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
             _CSIb1Orig.append(sortCSIb1Reshape[i][j])
 
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig)
+
+
 def addNoise(origin, SNR):
     dataLen = len(origin)
     noise = np.random.normal(0, 1, size=dataLen)
@@ -76,76 +80,90 @@ def addNoise(origin, SNR):
     noise = noise * np.sqrt(noise_variance / noise_power)
     return origin + noise, noise
 
-intvl = 6
-keyLen = 256
+
+# SNR = 0  EPISODE_LENGTH = 6 KEY_LENGTH = 8    3.3029284685549687
+# SNR = 5  EPISODE_LENGTH = 6 KEY_LENGTH = 8    0.8084493518963034
+# SNR = 10 EPISODE_LENGTH = 6 KEY_LENGTH = 8    0.06240998559769563
+# SNR = 15 EPISODE_LENGTH = 6 KEY_LENGTH = 8    0.0028804608737397984
+# SNR = 20 EPISODE_LENGTH = 6 KEY_LENGTH = 8    0.0
+# SNR = 25 EPISODE_LENGTH = 6 KEY_LENGTH = 8    0.0
+# SNR = 30 EPISODE_LENGTH = 6 KEY_LENGTH = 8    0.0
+
+# SNR = 10 EPISODE_LENGTH = 6 KEY_LENGTH = 16   0.27953890489913547
+# SNR = 10 EPISODE_LENGTH = 6 KEY_LENGTH = 32   0.9557692307692308
+# SNR = 10 EPISODE_LENGTH = 6 KEY_LENGTH = 64   3.5923076923076924
+
+# SNR = 10 EPISODE_LENGTH = 7 KEY_LENGTH = 64   1.515695067264574
+# SNR = 10 EPISODE_LENGTH = 8 KEY_LENGTH = 64   0.8358974358974359
+# SNR = 10 EPISODE_LENGTH = 9 KEY_LENGTH = 64   0.2947976878612717
+
+intvl = 8
+keyLen = 64
 times = 0
-SNR = 0
+for SNR in range(0, 35, 5):
+    # model = RandomWayPoint(steps=10000, x_range=np.array([0, 11]), y_range=np.array([0, 11]))
+    # trace_data = model.generate_trace(start_coor=[1, 1])
+    # CSIa1Orig = trace_data[:, 0]
+    # CSIb1Orig = addNoise(CSIa1Orig, SNR)[0]
 
-# model = RandomWayPoint(steps=10000, x_range=np.array([0, 11]), y_range=np.array([0, 11]))
-# trace_data = model.generate_trace(start_coor=[1, 1])
-# CSIa1Orig = trace_data[:, 0]
-# CSIb1Orig = addNoise(CSIa1Orig, SNR)[0]
+    CSIa1Orig = np.random.normal(0, 1, 100000)
+    # CSIa1Orig = loadmat("../data/data_static_indoor_1.mat")['A'][:, 0]
+    # CSIa1Orig = addNoise(CSIa1Orig, SNR)[0]
+    CSIb1Orig = addNoise(CSIa1Orig, SNR)[0]
 
-CSIa1Orig = np.random.normal(0, 1, 100000)
-# CSIa1Orig = loadmat("../data/data_static_indoor_1.mat")['A'][:, 0]
-# CSIa1Orig = addNoise(CSIa1Orig, SNR)[0]
-CSIb1Orig = addNoise(CSIa1Orig, SNR)[0]
+    dataLen = len(CSIa1Orig)
+    entropyThres = 2
+    CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 6, dataLen, entropyThres)
+    # CSIa1Orig, CSIb1Orig = entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres)
 
-dataLen = len(CSIa1Orig)
-# entropyThres = 2
-# CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 6, dataLen, entropyThres)
-# CSIa1Orig, CSIb1Orig = entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres)
+    CSIa1OrigBack = CSIa1Orig.copy()
+    CSIb1OrigBack = CSIb1Orig.copy()
 
-CSIa1OrigBack = CSIa1Orig.copy()
-CSIb1OrigBack = CSIb1Orig.copy()
+    ambiguities = 0
 
-ambiguities = 0
-print("sample number", len(CSIa1Orig))
+    for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
+        processTime = time.time()
 
-for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
-    processTime = time.time()
+        endInd = staInd + keyLen * intvl
+        if endInd >= len(CSIa1Orig):
+            break
+        times += 1
 
-    endInd = staInd + keyLen * intvl
-    print("range:", staInd, endInd)
-    if endInd >= len(CSIa1Orig):
-        break
-    times += 1
+        CSIa1Orig = CSIa1OrigBack.copy()
+        CSIb1Orig = CSIb1OrigBack.copy()
 
-    CSIa1Orig = CSIa1OrigBack.copy()
-    CSIb1Orig = CSIa1OrigBack.copy()
+        permLen = len(range(staInd, endInd, intvl))
+        origInd = np.array([xx for xx in range(staInd, endInd, 1)])
 
-    permLen = len(range(staInd, endInd, intvl))
-    origInd = np.array([xx for xx in range(staInd, endInd, 1)])
+        CSIa1Epi = CSIa1Orig[origInd]
+        CSIb1Epi = CSIb1Orig[origInd]
 
-    CSIa1Epi = CSIa1Orig[origInd]
-    CSIb1Epi = CSIb1Orig[origInd]
+        CSIa1Orig[origInd] = CSIa1Epi
+        CSIb1Orig[origInd] = CSIb1Epi
 
-    CSIa1Orig[origInd] = CSIa1Epi
-    CSIb1Orig[origInd] = CSIb1Epi
+        # Random permutation
+        newOrigInd = np.array([xx for xx in range(staInd, endInd, intvl)])
+        permInd = np.random.permutation(permLen)  ## KEY
+        permOrigInd = newOrigInd[permInd]
 
-    # Random permutation
-    newOrigInd = np.array([xx for xx in range(staInd, endInd, intvl)])
-    permInd = np.random.permutation(permLen)  ## KEY
-    permOrigInd = newOrigInd[permInd]
+        start = time.time()
+        for ii in range(permLen):
+            aIndVec = np.array([aa for aa in range(permOrigInd[ii], permOrigInd[ii] + intvl, 1)])  ## for permuted CSIa1
 
-    start = time.time()
-    for ii in range(permLen):
-        aIndVec = np.array([aa for aa in range(permOrigInd[ii], permOrigInd[ii] + intvl, 1)])  ## for permuted CSIa1
+            weights = []
 
-        weights = []
+            for jj in range(permLen, permLen * 2):
+                bIndVec = np.array([bb for bb in range(newOrigInd[jj - permLen], newOrigInd[jj - permLen] + intvl, 1)])
 
-        for jj in range(permLen, permLen * 2):
-            bIndVec = np.array([bb for bb in range(newOrigInd[jj - permLen], newOrigInd[jj - permLen] + intvl, 1)])
+                CSIa1Tmp = CSIa1Orig[aIndVec]
+                CSIb1Tmp = CSIb1Orig[bIndVec]
 
-            CSIa1Tmp = CSIa1Orig[aIndVec]
-            CSIb1Tmp = CSIb1Orig[bIndVec]
+                weights.append(np.sum(np.abs(CSIa1Tmp - CSIb1Tmp)))
+            # 如果不是相同索引对应的分段距离最小，说明出现了错误匹配
+            if permInd[ii] != np.argmin(weights):
+                ambiguities += 1
 
-            weights.append(np.sum(np.abs(CSIa1Tmp - CSIb1Tmp)))
-        if permInd[ii] != np.argmin(weights):
-            ambiguities += 1
+        # print("--- processTime %s seconds ---" % (time.time() - processTime))
+        # print("ambiguities", ambiguities)
 
-    print("--- processTime %s seconds ---" % (time.time() - processTime))
-    print("ambiguities", ambiguities)
-
-print(times)
-print(ambiguities / times)
+    print(SNR, times, ambiguities, round(ambiguities / times, 4))

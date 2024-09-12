@@ -351,7 +351,7 @@ for f in fileName:
     overhead = 0
 
     # no perturbation
-    withoutSort = True
+    withoutSort = False
     addNoise = "mul"
     codings = ""
     if withoutSort:

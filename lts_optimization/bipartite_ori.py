@@ -96,14 +96,14 @@ def addNoise(origin, SNR):
 # topNum = 16 keyLen = 256
 # 0.7576729911 0.0 1.6 1.2122767857142858
 
-dataLen = 10000
+# dataLen = 10000
 # SNR = 10
 # np.random.seed(0)
 # channel = np.random.normal(0, 1, size=dataLen)
 # CSIa1Orig = addNoise(channel, SNR)
 # CSIb1Orig = addNoise(channel, SNR)
 
-rawData = loadmat("csi_opt4_128.mat")
+rawData = loadmat("csi_opt2_256_10.mat")
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
 print(pearsonr(CSIa1Orig, CSIb1Orig)[0])
@@ -128,8 +128,8 @@ print(max(CSIa1Orig), min(CSIa1Orig))
 CSIa1OrigBack = CSIa1Orig.copy()
 CSIb1OrigBack = CSIb1Orig.copy()
 
-intvl = 7
-keyLen = 128
+intvl = 4
+keyLen = 256
 
 times = 0
 

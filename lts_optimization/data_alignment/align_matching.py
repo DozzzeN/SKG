@@ -13,10 +13,13 @@ def dtw_metric(data1, data2):
     return accelerated_dtw(data1, data2, dist=distance)
 
 
-fileNameA = "./matching/CSI_5_si.mat"
-fileNameB = "./matching/CSI_5_si.mat"
+fileNameA = "./matching/256-7o.mat"
+fileNameB = "./matching/256-7o.mat"
 
-fileNameR = fileNameA[:fileNameA.find('.mat')] + 'r.mat'
+fileNameR = fileNameA[:fileNameA.find('.mat')] + 'r(1).mat'
+
+# csiA = loadmat(fileNameA)['A'].T[0]
+# csiB = loadmat(fileNameB)['CSI'].T[0]
 
 csiA = loadmat(fileNameA)['A'].T[0]
 csiB = loadmat(fileNameB)['CSI'].T[0]
@@ -64,6 +67,13 @@ for i in range(1, dataLen, splitLen):
         if abs(csiAPart[j] - csiBPart[j]) < (max(max(csiAPart), max(csiBPart)) - min(min(csiAPart), min(csiBPart))) / 8:
             csiAAlign.append(csiAPart[j])
             csiBAlign.append(csiBPart[j])
+
+    # for 256-5r
+    # 过于平缓则删除，即收到的噪音包
+    # for j in range(splitLen):
+    #     if abs(csiAPart[j] - csiBPart[j]) < (max(max(csiAPart), max(csiBPart)) - min(min(csiAPart), min(csiBPart))) / 16:
+    #         csiAAlign.append(csiAPart[j])
+    #         csiBAlign.append(csiBPart[j])
 
     # intvl-wise delete
     # for j in range(int(splitLen / intvl)):

@@ -117,13 +117,13 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-fileName = ["../../data/data_mobile_indoor_1.mat",
-            "../../data/data_mobile_outdoor_1.mat",
-            "../../data/data_static_outdoor_1.mat",
-            "../../data/data_static_indoor_1.mat"
+fileName = ["../data/data_mobile_indoor_1.mat",
+            "../data/data_mobile_outdoor_1.mat",
+            "../data/data_static_indoor_1.mat",
+            "../data/data_static_outdoor_1.mat"
             ]
 
-# fileName = ["../../data/data_static_indoor_1.mat"]
+# fileName = ["../data/data_static_indoor_1.mat"]
 
 # 是否排序
 withoutSorts = [True, False]
@@ -174,7 +174,7 @@ for f in fileName:
 
             dataLenLoop = dataLen
             keyLenLoop = keyLen
-            if f == "../../data/data_static_indoor_1.mat":
+            if f == "../data/data_static_indoor_1.mat":
                 dataLenLoop = int(dataLen / 5.5)
                 keyLenLoop = int(keyLen / 5)
             for staInd in range(0, dataLenLoop, keyLenLoop):
@@ -227,13 +227,15 @@ for f in fileName:
                     # B1 = Q.T @ lambda2 @ Q
                     # randomMatrix = A1 + np.ones((keyLen, keyLen)) * 1j * B1
 
+                    # 均值化
                     tmpCSIa1 = (tmpCSIa1 - np.mean(tmpCSIa1)) / eta
                     tmpCSIb1 = (tmpCSIb1 - np.mean(tmpCSIb1)) / eta
                     tmpCSIe1 = (tmpCSIe1 - np.mean(tmpCSIe1)) / eta
 
+                    # 标准化
                     # control the magnitude of the perturbation matrix
                     # tmpCSIa1 = (tmpCSIa1 - np.min(tmpCSIa1)) / (np.max(tmpCSIa1) - np.min(tmpCSIa1)) / eta
-                    # if np.max(tmpCSIb1) - np.min(tmpCSIb1) == 0:
+                    # if np.max(tmpCSIb1) == np.min(tmpCSIb1):
                     #     tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / np.max(tmpCSIb1) / eta
                     # else:
                     #     tmpCSIb1 = (tmpCSIb1 - np.min(tmpCSIb1)) / (np.max(tmpCSIb1) - np.min(tmpCSIb1)) / eta
@@ -417,7 +419,7 @@ for f in fileName:
                         #     e_list_number.append(1)
                         # else:
                         #     e_list_number.append(0)
-                else:
+                elif bits == 2:
                     for i in range(len(aee)):
                         if aee[i] > np.percentile(aee, 75):
                             a_list_number.append(0)
@@ -498,3 +500,4 @@ for f in fileName:
             else:
                 print("withSort")
             print("\n")
+messagebox.showinfo("提示", "测试结束")

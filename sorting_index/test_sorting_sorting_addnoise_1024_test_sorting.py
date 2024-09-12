@@ -310,6 +310,7 @@ for f in fileName:
                 CSIa1Orig = rawData['A'][:, 0]
                 CSIb1Orig = rawData['A'][:, 1]
 
+                # 之前加噪音的测试未固定种子，结果不确定
                 seed = np.random.randint(100000)
                 np.random.seed(seed)
 
@@ -451,6 +452,7 @@ for f in fileName:
                                     epiIndb1 = tmpCSIb1Ind[j * segLen: (j + 1) * segLen]
                                     epiIndClosenessLsb[j] = sum(abs(epiIndb1 - np.array(epiInda1)))
 
+                                # 第一个找到的错误的，将其距离置为最大，下次找到的就是第二个，作为正确结果
                                 min_b = np.argmin(epiIndClosenessLsb)
                                 epiIndClosenessLsb[min_b] = keyLen * segLen
                                 b_list_number[i] = np.argmin(epiIndClosenessLsb)

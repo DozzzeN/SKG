@@ -102,7 +102,7 @@ def perturbedMatrix(data, M):
 
 # 仿真数据
 # 虽然设置了dataLen，但后续还是用依据A0的长度（40）进行操作，每次只能生成8位密钥
-# dataLen = 2400
+# dataLen = 240
 # SNR = 20
 # SA = np.random.normal(0, 1, size=dataLen)
 # SB = addNoise(SA, SNR)
@@ -118,15 +118,17 @@ SE = np.random.normal(np.mean(SB), np.std(SB, ddof=1), size=len(SB))
 print(pearsonr(SA, SB)[0])
 print(pearsonr(SA, SE)[0])
 
-# SA = np.array(SA).argsort().argsort()
-# SB = np.array(SB).argsort().argsort()
-# SE = np.array(SE).argsort().argsort()
-# print(pearsonr(SA, SB)[0])
-# print(pearsonr(SA, SE)[0])
+SAP = np.array(SA).argsort().argsort()
+SBP = np.array(SB).argsort().argsort()
+SEP = np.array(SE).argsort().argsort()
+print(pearsonr(SAP, SBP)[0])
+print(pearsonr(SAP, SEP)[0])
 
 SA = savgol_filter(SA, 11, 5, axis=0)
 SB = savgol_filter(SB, 11, 5, axis=0)
 SE = savgol_filter(SE, 11, 5, axis=0)
+print(pearsonr(SA, SB)[0])
+print(pearsonr(SA, SE)[0])
 
 # SA = SA - np.mean(SA)
 # SB = SB - np.mean(SB)
@@ -168,11 +170,20 @@ m22 = np.zeros(ni)  # mean-square error
 m22_eve = np.zeros(ni)  # mean-square error
 # 必须固定测量矩阵，或相似分布的测量矩阵
 A0 = loadmat('A0h-gau.mat')['A0'][:, :]
-# A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(int(N / 2), N))
+# A0 *= 10
+# A0 /= 10
+# 同分布的压缩矩阵
+# np.random.seed(100000)
+A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(int(N / 2), N))
 # A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
 # 不同分布的测量矩阵效果很差
 # A0 = np.random.normal(0, 2, size=(int(N / 2), N))
 
+# 原始方法有漏洞，密钥主要由A0决定
+isOriginMethod = True
+
+# 是否置换A0
+isPermuteA0 = False
 for j in range(int(dataLen / N)):
     Sa = SA[j * N:(j + 1) * N]
     Sb = SB[j * N:(j + 1) * N]
@@ -193,18 +204,33 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        # Aa = np.matmul(A0, (Ea + np.identity(N)))
-        # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        # Ea = np.matmul(A0, Sa)
-        # Eb = np.matmul(A0, Sb)
-        # Ee = np.matmul(A0, Se)
-        Ea = np.matmul(A0, (Sa + np.identity(N)))
-        Eb = np.matmul(A0, (Sb + np.identity(N)))
-        Ee = np.matmul(A0, (Se + np.identity(N)))
+        if isOriginMethod:
+            # 纵向copy成N*N的矩阵
+            Ea = np.matmul(A0, (np.tile(Sa, (N, 1)) + np.identity(N)))
+            Eb = np.matmul(A0, (np.tile(Sb, (N, 1)) + np.identity(N)))
+        else:
+            Ea = np.matmul(A0, Sa)
+            Eb = np.matmul(A0, Sb)
 
-        Aa = np.array(perturbedMatrix(Ea[:, 0], N)).T
-        Ab = np.array(perturbedMatrix(Eb[:, 0], N)).T
-        Ae = np.array(perturbedMatrix(Ee[:, 0], N)).T
+        # A0进行置换
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
+        # A0不置换
+        if isOriginMethod:
+            Ee = np.matmul(A0, (np.tile(Se, (N, 1)) + np.identity(N)))
+        else:
+            Ee = np.matmul(A0, Se)
+
+        if isOriginMethod:
+            # 仅使用Ea的第一列数据
+            Aa = np.array(perturbedMatrix(Ea[:, 0], N)).T
+            Ab = np.array(perturbedMatrix(Eb[:, 0], N)).T
+            Ae = np.array(perturbedMatrix(Ee[:, 0], N)).T
+        else:
+            Aa = np.array(perturbedMatrix(Ea, N)).T
+            Ab = np.array(perturbedMatrix(Eb, N)).T
+            Ae = np.array(perturbedMatrix(Ee, N)).T
 
         # Aa = circulant(Ea[::-1])
         # Ab = circulant(Eb[::-1])
@@ -236,12 +262,7 @@ for j in range(int(dataLen / N)):
         KB_de_sparse = []
         KE_de_sparse = []
         for i in range(0, len(KAs), 5):
-            if KAs[i] > 0.5:
-                KA_de_sparse.append(1)
-            elif KAs[i] < -0.5:
-                KA_de_sparse.append(1)
-            else:
-                KA_de_sparse.append(0)
+            KA_de_sparse.append(KAs[i])
 
             if KBs[i] > 0.5:
                 KB_de_sparse.append(1)
@@ -299,18 +320,35 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        # Aa = np.matmul(A0, (Ea + np.identity(N)))
-        # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        # Ea = np.matmul(A0, Sa)
-        # Eb = np.matmul(A0, Sb)
-        # Ee = np.matmul(A0, Se)
-        Ea = np.matmul(A0, (Sa + np.identity(N)))
-        Eb = np.matmul(A0, (Sb + np.identity(N)))
-        Ee = np.matmul(A0, (Se + np.identity(N)))
+        # 先乘矩阵
+        if isOriginMethod:
+            # 纵向copy成N*N的矩阵
+            Ea = np.matmul(A0, (np.tile(Sa, (N, 1)) + np.identity(N)))
+            Eb = np.matmul(A0, (np.tile(Sb, (N, 1)) + np.identity(N)))
+        else:
+            Ea = np.matmul(A0, Sa)
+            Eb = np.matmul(A0, Sb)
 
-        Aa = np.array(perturbedMatrix(Ea[:, 0], N)).T
-        Ab = np.array(perturbedMatrix(Eb[:, 0], N)).T
-        Ae = np.array(perturbedMatrix(Ee[:, 0], N)).T
+        # A0进行置换
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
+        # A0不置换
+        if isOriginMethod:
+            Ee = np.matmul(A0, (np.tile(Se, (N, 1)) + np.identity(N)))
+        else:
+            Ee = np.matmul(A0, Se)
+
+        # 后循环
+        if isOriginMethod:
+            # 仅使用Ea的第一列数据
+            Aa = np.array(perturbedMatrix(Ea[:, 0], N)).T
+            Ab = np.array(perturbedMatrix(Eb[:, 0], N)).T
+            Ae = np.array(perturbedMatrix(Ee[:, 0], N)).T
+        else:
+            Aa = np.array(perturbedMatrix(Ea, N)).T
+            Ab = np.array(perturbedMatrix(Eb, N)).T
+            Ae = np.array(perturbedMatrix(Ee, N)).T
 
         # Aa = circulant(Ea[::-1])
         # Ab = circulant(Eb[::-1])
@@ -329,9 +367,14 @@ for j in range(int(dataLen / N)):
         # print(m22)
         # print(m22_eve)
 
+        delta_AB = []
+        delta_AE = []
         KB_de_sparse = []
         KE_de_sparse = []
         for i in range(0, len(KAs), 5):
+            delta_AB.append(mismatch_AB[i])
+            delta_AE.append(mismatch_AE[i])
+
             if KBs[i] > 0.5:
                 KB_de_sparse.append(1)
             elif KBs[i] < -0.5:
@@ -346,13 +389,13 @@ for j in range(int(dataLen / N)):
             else:
                 KE_de_sparse.append(0)
 
-        sum1 = min(len(mismatch_AB), len(KB_de_sparse))
+        sum1 = min(len(delta_AB), len(KB_de_sparse))
         sum2 = 0
         sum3 = 0
         for i in range(0, sum1):
-            sum2 += (mismatch_AB[i] == KB_de_sparse[i])
+            sum2 += (delta_AB[i] == KB_de_sparse[i])
         for i in range(0, sum1):
-            sum3 += (mismatch_AE[i] == KE_de_sparse[i])
+            sum3 += (delta_AE[i] == KE_de_sparse[i])
 
         originSum2 += sum1
         correctSum2 += sum2

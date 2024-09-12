@@ -48,7 +48,7 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_mobile_indoor_1.mat")
+rawData = loadmat("../../data/data_static_indoor_1.mat")
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -56,8 +56,8 @@ CSIb1Orig = rawData['A'][:, 1]
 CSIe2Orig = loadmat("../../data/data_static_indoor_1.mat")['A'][:, 0]
 dataLen = min(len(CSIe2Orig), len(CSIa1Orig))
 
-segLen = 6  # l=5, lb=6
-keyLen = 256 * segLen
+segLen = 7  # l=5, lb=6
+keyLen = 128 * segLen
 
 lossySum = 0
 originSum = 0
@@ -96,10 +96,10 @@ for staInd in range(0, int(dataLen), keyLen):
     # imitation attack
     CSIe1Orig = np.random.normal(loc=np.mean(CSIa1Orig), scale=np.std(CSIa1Orig, ddof=1), size=len(CSIa1Orig))
 
-    # CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
-    # CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
-    # CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=30, window='flat')
-    # CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=30, window='flat')
+    CSIa1Orig = smooth(np.array(CSIa1Orig), window_len=30, window='flat')
+    CSIb1Orig = smooth(np.array(CSIb1Orig), window_len=30, window='flat')
+    CSIe1Orig = smooth(np.array(CSIe1Orig), window_len=30, window='flat')
+    CSIe2Orig = smooth(np.array(CSIe2Orig), window_len=30, window='flat')
 
     tmpCSIa1 = CSIa1Orig[range(staInd, endInd, 1)]
     tmpCSIb1 = CSIb1Orig[range(staInd, endInd, 1)]
@@ -124,11 +124,11 @@ for staInd in range(0, int(dataLen), keyLen):
     e2_list_number = []
     n1_list_number = []
 
-    tmpCSIn1Reshape = tmpCSIn1[:keyLen] * tmpCSIn1[:keyLen]
-    tmpCSIa1Reshape = tmpCSIa1[:keyLen] * tmpCSIn1[:keyLen]
-    tmpCSIb1Reshape = tmpCSIb1[:keyLen] * tmpCSIn1[:keyLen]
-    tmpCSIe1Reshape = tmpCSIe1[:keyLen] * tmpCSIn1[:keyLen]
-    tmpCSIe2Reshape = tmpCSIe2[:keyLen] * tmpCSIn1[:keyLen]
+    tmpCSIn1Reshape = tmpCSIn1[:keyLen]
+    tmpCSIa1Reshape = tmpCSIa1[:keyLen]
+    tmpCSIb1Reshape = tmpCSIb1[:keyLen]
+    tmpCSIe1Reshape = tmpCSIe1[:keyLen]
+    tmpCSIe2Reshape = tmpCSIe2[:keyLen]
 
     tmpCSIa1Reshape = np.array(tmpCSIa1Reshape).reshape(int(keyLen / segLen), segLen)
     tmpCSIb1Reshape = np.array(tmpCSIb1Reshape).reshape(int(keyLen / segLen), segLen)
@@ -151,6 +151,8 @@ for staInd in range(0, int(dataLen), keyLen):
             deltaA = 1 if abs(tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0]) - abs(
                 tmpCSIa1Reshape[i][j + 1] - tmpCSIa1Reshape[i][0]) > 0 else 0
             a_list_number.append(deltaA)
+
+    print("keys of a:", len(a_list_number), a_list_number)
 
     end_time = time.time() - start_time
     print("time", round(end_time, 9))

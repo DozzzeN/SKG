@@ -48,7 +48,7 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_static_outdoor_1.mat")
+rawData = loadmat("../../data/data_mobile_indoor_1.mat")
 
 CSIa1Orig = rawData['A'][:, 0]
 CSIb1Orig = rawData['A'][:, 1]
@@ -131,6 +131,7 @@ for staInd in range(0, int(dataLen), keyLen):
 
     min_q = sys.maxsize
 
+    # key retrieval
     for i in range(int(keyLen / segLen)):
         for j in range(1, segLen):
             min_q = min(min_q, abs(tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0]))
@@ -287,4 +288,5 @@ print("all bits", lossySum)
 print(originSum / len(CSIa1Orig))
 print(correctSum / len(CSIa1Orig))
 
-print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig), correctSum / len(CSIa1Orig))
+print(round(correctSum / originSum, 10), round(correctWholeSum / originWholeSum, 10), originSum / len(CSIa1Orig),
+      correctSum / len(CSIa1Orig))

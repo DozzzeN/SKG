@@ -48,7 +48,7 @@ def smooth(x, window_len=11, window='hanning'):
     return y
 
 
-rawData = loadmat("../../data/data_static_outdoor_1.mat")
+rawData = loadmat("../../data/data_mobile_indoor_1.mat")
 # data BMR BGR BGR-with-no-error
 # mi1 0.9967013889  0.0             1.186833565136764   1.1829186627517643
 # si1 0.9984886533  0.0535714286    1.283820895522388   1.2818805970149254
@@ -141,6 +141,7 @@ for staInd in range(0, int(dataLen), keyLen):
 
     min_q = sys.maxsize
 
+    # key retrieval
     for i in range(int(keyLen / segLen)):
         for j in range(1, segLen):
             min_q = min(min_q, abs(tmpCSIa1Reshape[i][j] - tmpCSIa1Reshape[i][0]))

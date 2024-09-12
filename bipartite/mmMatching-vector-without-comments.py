@@ -69,6 +69,7 @@ def splitEntropyPerm(CSIa1Orig, CSIb1Orig, segLen, dataLen, entropyThres):
 
     return np.array(_CSIa1Orig), np.array(_CSIb1Orig)
 
+# 代码测试结果（SIM-SKG与BM-SKG）以sorting_index/mmMatching-vector-without-comments_1024.py为准
 
 fileName = "../data/data_mobile_indoor_1.mat"
 rawData = loadmat(fileName)

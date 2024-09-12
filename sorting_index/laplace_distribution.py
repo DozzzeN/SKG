@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 n = 100000
 k = 10
 
-isShow = True
+isShow = False
 
 a = []
 d = []
@@ -21,7 +21,8 @@ print("mean", np.mean(a))
 print("var", np.var(a))
 print("mean", np.mean(d))
 print("var", np.var(d))
-
+print("mean", np.mean(e))
+print("var", np.var(e))
 
 if isShow:
     plt.figure()

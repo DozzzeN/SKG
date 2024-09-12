@@ -101,10 +101,12 @@ def perturbedMatrix(data, M):
 
 # 仿真数据
 # 虽然设置了dataLen，但后续还是用依据A0的长度（40）进行操作，每次只能生成8位密钥
-# dataLen = 2400
+# dataLen = 240
 # SNR = 20
+# np.random.seed(0)
 # SA = np.random.normal(0, 1, size=dataLen)
 # SB = addNoise(SA, SNR)
+# np.random.seed(0)
 # SE = np.random.normal(np.mean(SA), np.std(SA, ddof=1), size=dataLen)
 
 # 实验数据
@@ -117,15 +119,17 @@ SE = np.random.normal(np.mean(SB), np.std(SB, ddof=1), size=len(SB))
 print(pearsonr(SA, SB)[0])
 print(pearsonr(SA, SE)[0])
 
-# SA = np.array(SA).argsort().argsort()
-# SB = np.array(SB).argsort().argsort()
-# SE = np.array(SE).argsort().argsort()
-# print(pearsonr(SA, SB)[0])
-# print(pearsonr(SA, SE)[0])
+SAP = np.array(SA).argsort().argsort()
+SBP = np.array(SB).argsort().argsort()
+SEP = np.array(SE).argsort().argsort()
+print(pearsonr(SAP, SBP)[0])
+print(pearsonr(SAP, SEP)[0])
 
 SA = savgol_filter(SA, 11, 5, axis=0)
 SB = savgol_filter(SB, 11, 5, axis=0)
 SE = savgol_filter(SE, 11, 5, axis=0)
+print(pearsonr(SA, SB)[0])
+print(pearsonr(SA, SE)[0])
 
 # SA = SA - np.mean(SA)
 # SB = SB - np.mean(SB)
@@ -172,10 +176,20 @@ m22 = np.zeros(ni)  # mean-square error
 m22_eve = np.zeros(ni)  # mean-square error
 # 必须固定测量矩阵，或相似分布的测量矩阵
 A0 = loadmat('A0h-gau.mat')['A0'][:, :]
+# A0 *= 10
+# A0 /= 10
+# 同分布的压缩矩阵
+# np.random.seed(100000)
 # A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(int(N / 2), N))
 # A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
 # 不同分布的测量矩阵效果很差
 # A0 = np.random.normal(0, 2, size=(int(N / 2), N))
+
+# 原始方法有漏洞，密钥主要由A0决定
+isOriginMethod = True
+
+# 是否置换A0
+isPermuteA0 = False
 
 for j in range(int(dataLen / N)):
     Sa = SA[j * N:(j + 1) * N]
@@ -197,18 +211,26 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        # Aa = np.matmul(A0, (Ea + np.identity(N)))
-        # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        Aa = np.matmul(A0, Ea)
-        Ab = np.matmul(A0, Eb)
+        Ea = perturbedMatrix(Sa, N)
+        Eb = perturbedMatrix(Sb, N)
+        Ee = perturbedMatrix(Se, N)
+
+        if isOriginMethod:
+            Aa = np.matmul(A0, (Ea + np.identity(N)))
+            Ab = np.matmul(A0, (Eb + np.identity(N)))
+        else:
+            Aa = np.matmul(A0, Ea)
+            Ab = np.matmul(A0, Eb)
 
         # A0进行置换
-        # perm = np.random.permutation(len(A0))
-        # A0 = A0[perm]
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
         # A0不置换
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        Ae = np.matmul(A0, Ee)
+        if isOriginMethod:
+            Ae = np.matmul(A0, (Ee + np.identity(N)))
+        else:
+            Ae = np.matmul(A0, Ee)
 
         epsilon_AB1.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
         epsilon_AE1.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
@@ -236,12 +258,7 @@ for j in range(int(dataLen / N)):
         KB_de_sparse = []
         KE_de_sparse = []
         for i in range(0, len(KAs), 5):
-            if KAs[i] > 0.5:
-                KA_de_sparse.append(1)
-            elif KAs[i] < -0.5:
-                KA_de_sparse.append(1)
-            else:
-                KA_de_sparse.append(0)
+            KA_de_sparse.append(KAs[i])
 
             if KBs[i] > 0.5:
                 KB_de_sparse.append(1)
@@ -299,18 +316,22 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        # Aa = np.matmul(A0, (Ea + np.identity(N)))
-        # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        Aa = np.matmul(A0, Ea)
-        Ab = np.matmul(A0, Eb)
+        if isOriginMethod:
+            Aa = np.matmul(A0, (Ea + np.identity(N)))
+            Ab = np.matmul(A0, (Eb + np.identity(N)))
+        else:
+            Aa = np.matmul(A0, Ea)
+            Ab = np.matmul(A0, Eb)
 
         # A0进行置换
-        # perm = np.random.permutation(len(A0))
-        # A0 = A0[perm]
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
         # A0不置换
-        # Ae = np.matmul(A0, (Ee + np.identity(N)))
-        Ae = np.matmul(A0, Ee)
+        if isOriginMethod:
+            Ae = np.matmul(A0, (Ee + np.identity(N)))
+        else:
+            Ae = np.matmul(A0, Ee)
 
         epsilon_AB2.append(np.sqrt(l2norm2(Ab - Aa)) / np.sqrt(l2norm2(Aa)))
         epsilon_AE2.append(np.sqrt(l2norm2(Ae - Aa)) / np.sqrt(l2norm2(Aa)))
@@ -318,16 +339,21 @@ for j in range(int(dataLen / N)):
         b = np.matmul(Aa, mismatch_AB)
 
         [e23, _, _, KBs] = ass_pg_stls_f(Ab, b, N, K, lam, mismatch_AB, ni)
-        [e23_eve, _, _, KEs] = ass_pg_stls_f(Ae, b, N, K, lam, mismatch_AB, ni)
+        [e23_eve, _, _, KEs] = ass_pg_stls_f(Ae, b, N, K, lam, mismatch_AE, ni)
         m22 = m22 + e23
         m22_eve = m22_eve + e23_eve
 
         # print(m22)
         # print(m22_eve)
 
+        delta_AB = []
+        delta_AE = []
         KB_de_sparse = []
         KE_de_sparse = []
         for i in range(0, len(KAs), 5):
+            delta_AB.append(mismatch_AB[i])
+            delta_AE.append(mismatch_AE[i])
+
             if KBs[i] > 0.5:
                 KB_de_sparse.append(1)
             elif KBs[i] < -0.5:
@@ -342,13 +368,13 @@ for j in range(int(dataLen / N)):
             else:
                 KE_de_sparse.append(0)
 
-        sum1 = min(len(mismatch_AB), len(KB_de_sparse))
+        sum1 = min(len(delta_AB), len(KB_de_sparse))
         sum2 = 0
         sum3 = 0
         for i in range(0, sum1):
-            sum2 += (mismatch_AB[i] == KB_de_sparse[i])
+            sum2 += (delta_AB[i] == KB_de_sparse[i])
         for i in range(0, sum1):
-            sum3 += (mismatch_AE[i] == KE_de_sparse[i])
+            sum3 += (delta_AE[i] == KE_de_sparse[i])
 
         originSum2 += sum1
         correctSum2 += sum2
@@ -377,4 +403,3 @@ print("\033[0;34;40ma-e whole match", randomWholeSum2, "/", originWholeSum2, "="
 print("bit generation rate", round(correctSum2 / dataLen, 10))
 print(epsilon_AB2)
 print(epsilon_AE2)
-

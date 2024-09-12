@@ -5,7 +5,7 @@ from scipy.spatial import distance
 import numpy as np
 
 
-distri = "normal"
+distri = "uniform"
 # episode length
 l = 1
 # number of measurements

@@ -88,15 +88,18 @@ CSIa1Orig, CSIb1Orig = zip(*combineCSIx1Orig)
 CSIa1Orig = np.array(CSIa1Orig)
 CSIb1Orig = np.array(CSIb1Orig)
 
-# entropyThres = 2
+permutation_time = time.time()
+entropyThres = 2
 # CSIa1Orig, CSIb1Orig = splitEntropyPerm(CSIa1Orig, CSIb1Orig, 6, dataLen, entropyThres)
-# CSIa1Orig, CSIb1Orig = entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres)
+CSIa1Orig, CSIb1Orig = entropyPerm(CSIa1Orig, CSIb1Orig, dataLen, entropyThres)
+time_of_A = time.time() - permutation_time
 
 CSIa1OrigBack = CSIa1Orig.copy()
 CSIb1OrigBack = CSIb1Orig.copy()
 
+# 相同密钥长度，intvl越大，时间越长
 intvl = 1
-keyLen = 32
+keyLen = 128
 
 times = 0
 
@@ -179,4 +182,5 @@ for staInd in range(0, len(CSIa1Orig), intvl * keyLen):
     overhead += time.time() - processTime
 
 print(times)
-print(overhead / times)
+print(overhead / times * 1000)
+print(time_of_A / times * 1000)

@@ -136,10 +136,12 @@ def perturbedMatrix(data, M):
 
 # 仿真数据
 # 虽然设置了dataLen，但后续还是用依据A0的长度（40）进行操作，每次只能生成8位密钥
-# dataLen = 2400
+# dataLen = 240
 # SNR = 20
+# np.random.seed(0)
 # SA = np.random.normal(0, 1, size=dataLen)
 # SB = addNoise(SA, SNR)
+# np.random.seed(0)
 # SE = np.random.normal(np.mean(SA), np.std(SA, ddof=1), size=dataLen)
 
 # 实验数据
@@ -152,15 +154,17 @@ SE = np.random.normal(np.mean(SB), np.std(SB, ddof=1), size=len(SB))
 print(pearsonr(SA, SB)[0])
 print(pearsonr(SA, SE)[0])
 
-# SA = np.array(SA).argsort().argsort()
-# SB = np.array(SB).argsort().argsort()
-# SE = np.array(SE).argsort().argsort()
-# print(pearsonr(SA, SB)[0])
-# print(pearsonr(SA, SE)[0])
+# SAP = np.array(SA).argsort().argsort()
+# SBP = np.array(SB).argsort().argsort()
+# SEP = np.array(SE).argsort().argsort()
+# print(pearsonr(SAP, SBP)[0])
+# print(pearsonr(SAP, SEP)[0])
 
 SA = savgol_filter(SA, 11, 5, axis=0)
 SB = savgol_filter(SB, 11, 5, axis=0)
 SE = savgol_filter(SE, 11, 5, axis=0)
+print(pearsonr(SA, SB)[0])
+print(pearsonr(SA, SE)[0])
 
 # SA = SA - np.mean(SA)
 # SB = SB - np.mean(SB)
@@ -201,12 +205,21 @@ ni = 30  # no. of iterations
 m22 = np.zeros(ni)  # mean-square error
 m22_eve = np.zeros(ni)  # mean-square error
 # 必须固定测量矩阵，或相似分布的测量矩阵
-# A0 = loadmat('A0h-gau.mat')['A0'][:, :]
+A0 = loadmat('A0h-gau.mat')['A0'][:, :]
 # A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(int(N / 2), N))
-# A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(N, N))
-# A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
 np.random.seed(0)
-A0 = np.random.normal(0, 1, size=(N, N))
+A0 = np.random.normal(np.mean(A0), np.std(A0, ddof=1), size=(N, N))
+# A0 = np.random.normal(0, 0.2, size=(int(N / 2), N))
+# np.random.seed(0)
+# A0 = np.random.normal(0, 1, size=(N, N))
+
+# 原始方法有漏洞，密钥主要由A0决定
+isOriginMethod = True
+
+# 是否置换A0
+isPermuteA0 = False
+
+isNonNegative = False
 
 for j in range(int(dataLen / N)):
     Sa = SA[j * N:(j + 1) * N]
@@ -228,26 +241,41 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        # Aa = np.matmul(A0, (Ea + np.identity(N)))
-        # Ab = np.matmul(A0, (Eb + np.identity(N)))
-        Aa = np.matmul(A0, Sa)
-        Ab = np.matmul(A0, Sb)
-        Ae = np.matmul(A0, Se)
+        Ea = perturbedMatrix(Sa, N)
+        Eb = perturbedMatrix(Sb, N)
+        Ee = perturbedMatrix(Se, N)
 
+        if isOriginMethod:
+            Aa = np.matmul(A0, (Ea + np.identity(N)))
+            Ab = np.matmul(A0, (Eb + np.identity(N)))
+        else:
+            Aa = np.matmul(A0, Ea)
+            Ab = np.matmul(A0, Eb)
+
+        # A0进行置换
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
+        # A0不置换
+        if isOriginMethod:
+            Ae = np.matmul(A0, (Ee + np.identity(N)))
+        else:
+            Ae = np.matmul(A0, Ee)
         np.random.seed(times)
         KAs = np.random.randint(2, size=N)
 
         b = np.matmul(Aa, KAs)
 
-        # def residuals(x, Aa, b):
-        #     return b - np.dot(Aa, x)
-        # KAs = leastsq(residuals, np.random.randint(2, size=N), args=(Aa, b))[0]
-        # KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
-        # KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
-
-        KAs = nnls(Aa, b)[0]
-        KBs = nnls(Ab, b)[0]
-        KEs = nnls(Ae, b)[0]
+        if isNonNegative:
+            KAs = nnls(Aa, b)[0]
+            KBs = nnls(Ab, b)[0]
+            KEs = nnls(Ae, b)[0]
+        else:
+            def residuals(x, Aa, b):
+                return b - np.dot(Aa, x)
+            KAs = leastsq(residuals, np.random.randint(2, size=N), args=(Aa, b))[0]
+            KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
+            KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
 
         KA_de_sparse = [round(i) % 2 for i in KAs]
         KB_de_sparse = [round(i) % 2 for i in KBs]
@@ -286,17 +314,33 @@ for j in range(int(dataLen / N)):
         perm = np.random.permutation(len(A0))
         A0 = A0[perm]
 
-        Aa = np.matmul(A0, Ea)
-        Ab = np.matmul(A0, Eb)
-        Ae = np.matmul(A0, Ee)
+        if isOriginMethod:
+            Aa = np.matmul(A0, (Ea + np.identity(N)))
+            Ab = np.matmul(A0, (Eb + np.identity(N)))
+        else:
+            Aa = np.matmul(A0, Ea)
+            Ab = np.matmul(A0, Eb)
+
+        # A0进行置换
+        if isPermuteA0:
+            perm = np.random.permutation(len(A0))
+            A0 = A0[perm]
+        # A0不置换
+        if isOriginMethod:
+            Ae = np.matmul(A0, (Ee + np.identity(N)))
+        else:
+            Ae = np.matmul(A0, Ee)
 
         b = np.matmul(Aa, mismatch_AB)
 
-        # KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
-        # KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
-
-        KBs = nnls(Ab, b)[0]
-        KEs = nnls(Ae, b)[0]
+        if isNonNegative:
+            KBs = nnls(Ab, b)[0]
+            KEs = nnls(Ae, b)[0]
+        else:
+            def residuals(x, Aa, b):
+                return b - np.dot(Aa, x)
+            KBs = leastsq(residuals, np.random.randint(2, size=N), args=(Ab, b))[0]
+            KEs = leastsq(residuals, np.random.randint(2, size=N), args=(Ae, b))[0]
 
         KB_de_sparse = [round(i) % 2 for i in KBs]
         KE_de_sparse = [round(i) % 2 for i in KEs]
